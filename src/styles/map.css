@@ -1,0 +1,230 @@
+.map-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 10%, #1e293b 0%, #070d19 100%);
+}
+
+.map-stage-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.map-board {
+  position: relative;
+  width: 100%;
+  max-width: min(1400px, calc((100vh - 84px) * 1672 / 941));
+  aspect-ratio: 1672 / 941;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 2px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  background: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .map-stage-viewport {
+    padding: 0.35rem;
+    align-items: center;
+    overflow-x: auto;
+  }
+  .map-board {
+    min-width: 780px;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+.map-artwork {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  display: block;
+}
+
+.map-svg-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.map-ambient-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.map-hotspots-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.map-hotspot-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.map-hotspot-btn:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.12);
+  z-index: 25;
+}
+
+.stage-node {
+  width: clamp(32px, 3.3vw, 48px);
+  height: clamp(32px, 3.3vw, 48px);
+  font-weight: 800;
+  font-size: clamp(0.85rem, 1.3vw, 1.15rem);
+  border: 2.5px solid #ffffff;
+}
+
+.stage-node--daytime.stage-node--active {
+  background: radial-gradient(circle at 30% 30%, #fde047, #ea580c);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.45), 0 0 22px rgba(249, 115, 22, 0.9);
+  animation: pulseBeaconDay 2s infinite ease-in-out;
+}
+
+.stage-node--nighttime.stage-node--active {
+  background: radial-gradient(circle at 30% 30%, #67e8f9, #0284c7);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.45), 0 0 22px rgba(6, 182, 212, 0.9);
+  animation: pulseBeaconNight 2s infinite ease-in-out;
+}
+
+.stage-node--completed {
+  background: radial-gradient(circle at 30% 30%, #4ade80, #15803d);
+  color: #ffffff;
+  border-color: #fde047;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.75);
+}
+
+.stage-node--locked {
+  background: rgba(15, 23, 42, 0.85);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.5);
+  opacity: 0.82;
+  cursor: not-allowed;
+}
+
+.stage-node-stars {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1px;
+  background: rgba(15, 23, 42, 0.88);
+  padding: 1px 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.persian-map-plaque {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-weight: 700;
+  font-size: clamp(0.55rem, 0.85vw, 0.8rem);
+  padding: 3px 9px;
+  border-radius: 0.45rem;
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.35;
+  z-index: 6;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.65);
+}
+
+.plaque--day {
+  background: rgba(124, 45, 18, 0.96);
+  color: #ffedd5;
+  border: 1px solid #fb923c;
+  min-width: clamp(84px, 7.8vw, 126px);
+}
+
+.plaque--night {
+  background: rgba(12, 42, 78, 0.96);
+  color: #e0f2fe;
+  border: 1px solid #38bdf8;
+  min-width: clamp(82px, 7.6vw, 124px);
+}
+
+.plaque--wood-lg {
+  background: linear-gradient(180deg, #925b2d, #5c3718);
+  color: #fef3c7;
+  border: 2px solid #f59e0b;
+  font-size: clamp(0.75rem, 1.25vw, 1.1rem);
+  padding: 5px 22px;
+  min-width: clamp(92px, 9vw, 140px);
+}
+
+.plaque--legend {
+  background: linear-gradient(180deg, #7c4a24, #4d2d14);
+  color: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  font-size: clamp(0.6rem, 0.9vw, 0.85rem);
+  padding: 6px 14px;
+  min-width: clamp(110px, 11vw, 165px);
+}
+
+.plaque--decoy {
+  background: rgba(127, 29, 29, 0.96);
+  color: #fef08a;
+  border: 1.5px solid #f87171;
+  min-width: clamp(90px, 8.2vw, 132px);
+}
+
+.route-path-base {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.route-path-locked {
+  opacity: 0.35;
+  stroke-dasharray: 12 10;
+}
+
+.route-path-active {
+  opacity: 0.95;
+  stroke-dasharray: 16 10;
+  animation: dashFlow 1.6s linear infinite;
+}
+
+.route-path-completed {
+  opacity: 1;
+  stroke-dasharray: none;
+}
+
+.map-companion-marker {
+  position: absolute;
+  transform: translate(-50%, -115%);
+  width: clamp(36px, 3.6vw, 52px);
+  height: clamp(36px, 3.6vw, 52px);
+  z-index: 15;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.22, 1, 0.36, 1), top 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.65));
+}

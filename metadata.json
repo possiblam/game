@@ -1,0 +1,6 @@
+{
+  "name": "راز گنج دو جهان",
+  "description": "بازی ماجراجویی و شکار گنج فارسی دو جهان با دوازده مرحله معمایی و مهارتی برای کودکان",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

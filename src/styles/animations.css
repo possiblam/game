@@ -1,0 +1,111 @@
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes driftCloud {
+  0% {
+    transform: translateX(-8%);
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(18%);
+    opacity: 0.35;
+  }
+}
+
+@keyframes twinkleStar {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes dashFlow {
+  from {
+    stroke-dashoffset: 52;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulseBeaconDay {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.45), 0 0 18px rgba(249, 115, 22, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(251, 146, 60, 0.15), 0 0 30px rgba(251, 191, 36, 1);
+  }
+}
+
+@keyframes pulseBeaconNight {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.45), 0 0 18px rgba(6, 182, 212, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(34, 211, 238, 0.15), 0 0 30px rgba(103, 232, 249, 1);
+  }
+}
+
+@keyframes coinFall {
+  0% {
+    transform: translateY(-30px) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(220px) rotate(360deg) scale(1.1);
+    opacity: 0;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-float {
+  animation: floatGentle 3.2s ease-in-out infinite;
+}
+
+.animate-cloud {
+  animation: driftCloud 18s ease-in-out infinite alternate;
+}
+
+.animate-twinkle {
+  animation: twinkleStar 2.8s ease-in-out infinite;
+}
+
+.animate-modal-in {
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-cloud,
+  .animate-twinkle,
+  .route-path-active,
+  .stage-node--active {
+    animation: none !important;
+  }
+}
