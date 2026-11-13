@@ -22,52 +22,52 @@ export function mountDayStage2(container, ctx) {
   let activeMagnetDir = null;
 
   shell.playArea.innerHTML = `
-    <div class="w-full max-w-[780px] flex flex-col items-center gap-3">
+    <div class="w-full max-w-[780px] flex flex-col items-center gap-2.5 sm:gap-3">
       <div class="w-full flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm text-amber-200 px-1">
         <span>قطعات فلزی را با آهنرباها روی جایگاه هم‌رنگ بفرستید تا محفظه کلید باز شود</span>
         <span id="d2-status" class="font-bold text-amber-300 tabular-nums">قفل‌های آماده: ۰ از ۳</span>
       </div>
 
-      <div id="d2-chamber" class="relative w-full max-w-[520px] p-4 rounded-2xl bg-slate-900/95 border-2 border-amber-400/50 shadow-2xl">
-        <!-- Top Magnet -->
-        <div class="flex justify-center mb-2">
-          <button type="button" data-magnet="up" class="px-4 py-2 rounded-xl btn-day-accent text-xs sm:text-sm" data-testid="magnet-up">
+      <div id="d2-chamber" class="relative w-full max-w-[540px] p-3 sm:p-4 rounded-2xl bg-slate-900/95 border-2 border-amber-400/50 shadow-2xl">
+        <div class="d2-chamber-layout">
+          <!-- Top Magnet -->
+          <button type="button" data-magnet="up" class="d2-area-up w-full max-w-[175px] sm:w-auto min-h-[44px] px-4 py-2 rounded-xl btn-day-accent text-xs sm:text-sm whitespace-nowrap" data-testid="magnet-up">
             🧲 جذب به بالا
           </button>
-        </div>
 
-        <div class="flex items-center justify-center gap-2">
-          <!-- Right Magnet (RTL right is visual right) -->
-          <button type="button" data-magnet="right" class="px-2.5 py-3 rounded-xl btn-day-accent text-xs sm:text-sm shrink-0" data-testid="magnet-right">
+          <!-- Right Magnet -->
+          <button type="button" data-magnet="right" class="d2-area-right w-full max-w-[145px] sm:w-auto min-h-[46px] px-3 py-2.5 sm:py-3 rounded-xl btn-day-accent text-xs sm:text-sm shrink-0 whitespace-nowrap" data-testid="magnet-right">
             🧲 راست
           </button>
 
-          <!-- 5x5 Grid -->
-          <div id="d2-grid" class="grid grid-cols-5 gap-1.5 sm:gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-700" style="direction:ltr"></div>
+          <!-- 5x5 Grid (fluid square cells on mobile, 64px on desktop; supports touch swipe) -->
+          <div id="d2-grid" class="d2-area-grid w-full max-w-[300px] sm:max-w-none grid grid-cols-5 gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl bg-slate-950 border border-slate-700 touch-none select-none" style="direction:ltr"></div>
 
           <!-- Left Magnet -->
-          <button type="button" data-magnet="left" class="px-2.5 py-3 rounded-xl btn-day-accent text-xs sm:text-sm shrink-0" data-testid="magnet-left">
+          <button type="button" data-magnet="left" class="d2-area-left w-full max-w-[145px] sm:w-auto min-h-[46px] px-3 py-2.5 sm:py-3 rounded-xl btn-day-accent text-xs sm:text-sm shrink-0 whitespace-nowrap" data-testid="magnet-left">
             🧲 چپ
           </button>
-        </div>
 
-        <!-- Bottom Magnet -->
-        <div class="flex justify-center mt-2">
-          <button type="button" data-magnet="down" class="px-4 py-2 rounded-xl btn-day-accent text-xs sm:text-sm" data-testid="magnet-down">
+          <!-- Bottom Magnet -->
+          <button type="button" data-magnet="down" class="d2-area-down w-full max-w-[175px] sm:w-auto min-h-[44px] px-4 py-2 rounded-xl btn-day-accent text-xs sm:text-sm whitespace-nowrap" data-testid="magnet-down">
             🧲 جذب به پایین
           </button>
         </div>
 
+        <p class="sm:hidden text-[11px] text-slate-400 text-center mt-2 mb-0">
+          می‌توانید روی صفحه ۵×۵ به چپ، راست، بالا یا پایین بکشید یا از دکمه‌ها استفاده کنید
+        </p>
+
         <!-- Hidden Magnetic Key Vault -->
-        <div id="d2-vault" class="mt-4 p-4 rounded-xl border-2 text-center transition-all ${
+        <div id="d2-vault" class="mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border-2 text-center transition-all ${
           vaultOpen ? 'bg-amber-950/60 border-amber-300' : 'bg-slate-800/70 border-slate-600'
         }">
           <div class="text-xs sm:text-sm font-bold text-slate-200 mb-2" id="d2-vault-label">
             محفظه شیشه‌ای کلید مغناطیسی (قفل است)
           </div>
           <button type="button" id="d2-pickup-key" data-testid="pickup-magnetic-key"
-            class="px-5 py-2.5 rounded-xl font-extrabold text-sm transition-all ${
-              vaultOpen ? 'btn-primary-gold animate-float' : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+            class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl font-extrabold text-sm transition-all ${
+              vaultOpen ? 'btn-primary-gold' : 'bg-slate-700 text-slate-400 cursor-not-allowed'
             }" disabled>
             🗝️ برداشتن کلید مغناطیسی
           </button>
@@ -185,7 +185,7 @@ export function mountDayStage2(container, ctx) {
         const core = cores.find((x) => x.col === c && x.row === r);
 
         cell.className =
-          'w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center relative border transition-all';
+          'w-full aspect-square sm:w-16 sm:h-16 rounded-lg flex items-center justify-center relative border transition-all';
 
         if (isBumper) {
           cell.className += ' bg-slate-700 border-slate-500';
@@ -201,7 +201,7 @@ export function mountDayStage2(container, ctx) {
         if (core) {
           const block = document.createElement('div');
           block.className =
-            'w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-extrabold text-xs shadow-md border-2 transition-transform';
+            'w-[80%] h-[80%] sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-extrabold text-[11px] sm:text-xs shadow-md border-2 transition-transform';
           block.style.background = core.color;
           block.style.color = '#0f172a';
           block.style.borderColor = core.locked ? '#4ade80' : '#ffffff';
@@ -220,19 +220,19 @@ export function mountDayStage2(container, ctx) {
     }
 
     if (vaultOpen) {
-      vaultEl.className = 'mt-4 p-4 rounded-xl border-2 text-center transition-all bg-amber-950/60 border-amber-300';
+      vaultEl.className = 'mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border-2 text-center transition-all bg-amber-950/60 border-amber-300';
       vaultLabel.textContent = keyCollected
         ? 'کلید مغناطیسی در کیف ابزار ذخیره شد!'
         : 'محفظه باز شد! روی کلید مغناطیسی کلیک کنید تا برداشته شود:';
       pickupBtn.disabled = keyCollected;
       pickupBtn.className = keyCollected
-        ? 'px-5 py-2.5 rounded-xl font-extrabold text-sm bg-emerald-700 text-white'
-        : 'px-5 py-2.5 rounded-xl font-extrabold text-sm btn-primary-gold ring-4 ring-amber-300/60';
+        ? 'w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl font-extrabold text-sm bg-emerald-700 text-white'
+        : 'w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl font-extrabold text-sm btn-primary-gold ring-4 ring-amber-300/60';
     } else {
-      vaultEl.className = 'mt-4 p-4 rounded-xl border-2 text-center transition-all bg-slate-800/70 border-slate-600';
+      vaultEl.className = 'mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border-2 text-center transition-all bg-slate-800/70 border-slate-600';
       vaultLabel.textContent = 'محفظه شیشه‌ای کلید مغناطیسی (قفل است)';
       pickupBtn.disabled = true;
-      pickupBtn.className = 'px-5 py-2.5 rounded-xl font-extrabold text-sm bg-slate-700 text-slate-400 cursor-not-allowed';
+      pickupBtn.className = 'w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl font-extrabold text-sm bg-slate-700 text-slate-400 cursor-not-allowed';
     }
   }
 
@@ -256,6 +256,28 @@ export function mountDayStage2(container, ctx) {
     }
   }
 
+  // Touch swipe support on the 5x5 grid
+  let swipeX = 0;
+  let swipeY = 0;
+  const onGridTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+  };
+  const onGridTouchEnd = (e) => {
+    if (e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - swipeX;
+    const dy = e.changedTouches[0].clientY - swipeY;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      pullMagnet(dx > 0 ? 'right' : 'left');
+    } else {
+      pullMagnet(dy > 0 ? 'down' : 'up');
+    }
+  };
+  gridEl.addEventListener('touchstart', onGridTouchStart, { passive: true });
+  gridEl.addEventListener('touchend', onGridTouchEnd, { passive: true });
+
   window.addEventListener('keydown', onKeyDown);
 
   pickupBtn.addEventListener('click', () => {
@@ -273,6 +295,8 @@ export function mountDayStage2(container, ctx) {
 
   shell.registerCleanup(() => {
     window.removeEventListener('keydown', onKeyDown);
+    gridEl.removeEventListener('touchstart', onGridTouchStart);
+    gridEl.removeEventListener('touchend', onGridTouchEnd);
   });
 
   return shell;

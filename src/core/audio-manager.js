@@ -115,6 +115,44 @@ export class AudioManager {
     });
   }
 
+  playCrestActivate(kind = 'sun') {
+    if (kind === 'sun') {
+      [392.0, 493.88, 587.33, 783.99].forEach((freq, idx) => {
+        this.playTone({ freq, duration: 0.25, type: 'triangle', gain: 0.1, delay: idx * 0.06 });
+      });
+    } else {
+      [440.0, 523.25, 659.25, 880.0].forEach((freq, idx) => {
+        this.playTone({ freq, duration: 0.28, type: 'sine', gain: 0.1, delay: idx * 0.06 });
+      });
+    }
+  }
+
+  playChestRumble() {
+    this.playTone({ freq: 95, slideTo: 220, duration: 0.58, type: 'sawtooth', gain: 0.07 });
+    this.playTone({ freq: 261.63, slideTo: 523.25, duration: 0.55, type: 'triangle', gain: 0.08, delay: 0.06 });
+  }
+
+  playGrandTreasureFanfare() {
+    // Triumphant multi-voice royal fanfare + high crystal sparkles
+    const brass = [
+      { f: 523.25, d: 0.18, t: 0.0 },
+      { f: 659.25, d: 0.18, t: 0.13 },
+      { f: 783.99, d: 0.22, t: 0.26 },
+      { f: 1046.5, d: 0.42, t: 0.40 },
+      { f: 880.0, d: 0.18, t: 0.84 },
+      { f: 987.77, d: 0.18, t: 1.0 },
+      { f: 1046.5, d: 0.72, t: 1.16 },
+    ];
+    brass.forEach((m) => {
+      this.playTone({ freq: m.f, duration: m.d, type: 'triangle', gain: 0.14, delay: m.t });
+      this.playTone({ freq: m.f * 0.5, duration: m.d, type: 'sine', gain: 0.09, delay: m.t });
+    });
+    const sparkles = [1318.5, 1567.98, 1760.0, 2093.0];
+    sparkles.forEach((f, idx) => {
+      this.playTone({ freq: f, duration: 0.24, type: 'sine', gain: 0.07, delay: 0.48 + idx * 0.12 });
+    });
+  }
+
   setMusicTheme(theme) {
     if (this.currentTheme === theme && this.musicTimer) return;
     this.currentTheme = theme;

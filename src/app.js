@@ -298,7 +298,7 @@ export function initApp(rootEl) {
     closeActiveModal();
     audio.setMusicTheme('map');
     sceneManager.mount('victory', 'gameover', (mountEl) => {
-      renderFinalTempleScene(mountEl, {
+      return renderFinalTempleScene(mountEl, {
         state,
         audio,
         onCompleteCeremony: () => {
