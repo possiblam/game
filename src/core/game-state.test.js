@@ -14,6 +14,12 @@ import {
 } from './game-state.js';
 import { evaluatePlatformPath, areRingsAligned } from '../stages/puzzle-logic.js';
 import { toPersianDigits } from '../data/translations.js';
+import {
+  clampZoom,
+  clampPan,
+  computeZoomAroundPoint,
+  computePercentFocusTransform,
+} from '../map/zoom-math.js';
 
 test('stage 1 is unlocked on both routes while stages 2..6 start locked', () => {
   const state = createInitialGameState();
@@ -133,4 +139,46 @@ test('areRingsAligned and toPersianDigits work accurately', () => {
   assert.equal(areRingsAligned([0, 360, 720]), true);
   assert.equal(areRingsAligned([0, 45, 0]), false);
   assert.equal(toPersianDigits('12 / 36'), '۱۲ / ۳۶');
+});
+
+test('map zoom and pan math clamps bounds and preserves focal point', () => {
+  assert.equal(clampZoom(0.5), 1);
+  assert.equal(clampZoom(5), 3.5);
+
+  const pan1x = clampPan({ tx: 120, ty: -80, scale: 1, boardW: 374, boardH: 210, viewW: 374, viewH: 210 });
+  assert.deepEqual(pan1x, { tx: 0, ty: 0 });
+
+  const pan2x = clampPan({ tx: 500, ty: -500, scale: 2, boardW: 374, boardH: 210, viewW: 374, viewH: 210 });
+  assert.deepEqual(pan2x, { tx: 187, ty: -105 });
+
+  const zoomed = computeZoomAroundPoint({
+    tx: 0,
+    ty: 0,
+    oldScale: 1,
+    newScale: 2,
+    pointX: 100,
+    pointY: 150,
+    viewCenterX: 187,
+    viewCenterY: 150,
+    boardW: 374,
+    boardH: 210,
+    viewW: 374,
+    viewH: 210,
+  });
+  assert.equal(zoomed.scale, 2);
+  assert.equal(zoomed.tx, 87);
+  assert.equal(zoomed.ty, 0);
+
+  const dayFocus = computePercentFocusTransform({
+    pctX: 25,
+    pctY: 50,
+    targetScale: 2.2,
+    boardW: 380,
+    boardH: 214,
+    viewW: 380,
+    viewH: 600,
+  });
+  assert.equal(dayFocus.scale, 2.2);
+  assert.ok(dayFocus.tx > 150);
+  assert.equal(dayFocus.ty, 0);
 });

@@ -13,6 +13,14 @@ import {
 } from '../core/game-state.js';
 import { renderMapTopBar, renderKeyIconSvg } from '../components/progress-bar.js';
 import { showModal } from '../components/modal.js';
+import {
+  MIN_MAP_ZOOM,
+  MAX_MAP_ZOOM,
+  clampZoom,
+  clampPan,
+  computeZoomAroundPoint,
+  computePercentFocusTransform,
+} from './zoom-math.js';
 
 export function renderMapView(
   container,
@@ -43,6 +51,36 @@ export function renderMapView(
   const stageViewport = document.createElement('main');
   stageViewport.className = 'map-stage-viewport';
   stageViewport.setAttribute('aria-label', 'نقشه ماجراجویی دو جهان');
+
+  const zoomShell = document.createElement('div');
+  zoomShell.className = 'map-zoom-shell';
+  zoomShell.dataset.testid = 'map-zoom-shell';
+
+  // Mobile Fullscreen Header (shown only when isFullscreen is active on mobile)
+  const fullscreenHeader = document.createElement('div');
+  fullscreenHeader.className =
+    'hidden items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-900/95 border border-amber-400/30 text-slate-100 shrink-0';
+  fullscreenHeader.innerHTML = `
+    <button type="button" data-testid="mobile-map-close-fullscreen" class="px-3 py-1.5 rounded-lg btn-secondary-slate text-xs font-extrabold whitespace-nowrap shrink-0 min-h-[36px]">
+      ✕ بستن
+    </button>
+    <div class="flex items-center gap-1.5 overflow-x-auto">
+      <button type="button" data-testid="mobile-map-focus-day" class="px-2.5 py-1.5 rounded-lg bg-orange-950/80 border border-orange-400/60 text-orange-200 text-xs font-extrabold whitespace-nowrap min-h-[34px]">
+        ☀ روز
+      </button>
+      <button type="button" data-testid="mobile-map-focus-night" class="px-2.5 py-1.5 rounded-lg bg-sky-950/80 border border-cyan-400/60 text-cyan-200 text-xs font-extrabold whitespace-nowrap min-h-[34px]">
+        🌙 شب
+      </button>
+      <button type="button" data-testid="mobile-map-focus-all" class="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-extrabold whitespace-nowrap min-h-[34px]">
+        🗺 کل
+      </button>
+    </div>
+  `;
+  zoomShell.appendChild(fullscreenHeader);
+
+  const zoomViewport = document.createElement('div');
+  zoomViewport.className = 'map-zoom-viewport';
+  zoomViewport.dataset.testid = 'mobile-map-zoom-viewport';
 
   const board = document.createElement('div');
   board.className = 'map-board';
@@ -342,7 +380,411 @@ export function renderMapView(
 
   hotspotsLayer.appendChild(finalBtn);
   board.appendChild(hotspotsLayer);
-  stageViewport.appendChild(board);
+  zoomViewport.appendChild(board);
+  zoomShell.appendChild(zoomViewport);
+
+  // Mobile-Only Map Zoom & Fullscreen Toolbar (strictly hidden on md: / >= 768px)
+  const mobileZoomBar = document.createElement('div');
+  mobileZoomBar.className =
+    'md:hidden flex items-center justify-between gap-2 px-2.5 py-2 bg-slate-900/95 border-2 border-t-0 border-amber-400/35 rounded-b-xl text-slate-100 shrink-0';
+  mobileZoomBar.dataset.testid = 'mobile-map-zoom-toolbar';
+  mobileZoomBar.innerHTML = `
+    <div class="flex items-center gap-1.5 min-w-0">
+      <button type="button" data-testid="mobile-map-fullscreen-btn" class="px-2.5 py-1.5 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/60 text-amber-200 text-xs font-extrabold whitespace-nowrap min-h-[36px] inline-flex items-center gap-1">
+        <span aria-hidden="true">🔍</span>
+        <span>نمای تمام‌صفحه</span>
+      </button>
+      <span data-testid="mobile-map-fullscreen-hint" class="hidden text-[11px] text-slate-300 font-semibold whitespace-nowrap truncate">
+        زوم دو انگشتی · کشیدن
+      </span>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button type="button" data-testid="mobile-map-zoom-in" aria-label="بزرگ‌نمایی نقشه" class="w-9 h-9 rounded-lg btn-secondary-slate text-base font-extrabold flex items-center justify-center">+</button>
+      <span data-testid="mobile-map-zoom-label" class="min-w-[46px] text-center text-xs font-extrabold text-amber-300 tabular-nums">۱۰۰٪</span>
+      <button type="button" data-testid="mobile-map-zoom-out" aria-label="کوچک‌نمایی نقشه" class="w-9 h-9 rounded-lg btn-secondary-slate text-base font-extrabold flex items-center justify-center">−</button>
+      <button type="button" data-testid="mobile-map-zoom-reset" aria-label="بازنشانی نمای نقشه" class="px-2.5 h-9 rounded-lg btn-secondary-slate text-xs font-bold whitespace-nowrap">بازنشانی</button>
+    </div>
+  `;
+  zoomShell.appendChild(mobileZoomBar);
+  stageViewport.appendChild(zoomShell);
+
+  // Interactive Zoom, Pinch, Pan, Double-Tap & Fullscreen Controller (Mobile < 768px only)
+  const zoomState = { scale: MIN_MAP_ZOOM, tx: 0, ty: 0 };
+  let isFullscreen = false;
+  let animTimer = null;
+  let suppressClickUntil = 0;
+
+  const zoomLabelEl = mobileZoomBar.querySelector('[data-testid="mobile-map-zoom-label"]');
+  const zoomOutBtn = mobileZoomBar.querySelector('[data-testid="mobile-map-zoom-out"]');
+  const zoomInBtn = mobileZoomBar.querySelector('[data-testid="mobile-map-zoom-in"]');
+  const zoomResetBtn = mobileZoomBar.querySelector('[data-testid="mobile-map-zoom-reset"]');
+  const fullscreenBtn = mobileZoomBar.querySelector('[data-testid="mobile-map-fullscreen-btn"]');
+  const fullscreenHintEl = mobileZoomBar.querySelector('[data-testid="mobile-map-fullscreen-hint"]');
+  const closeFullscreenBtn = fullscreenHeader.querySelector('[data-testid="mobile-map-close-fullscreen"]');
+  const focusDayBtn = fullscreenHeader.querySelector('[data-testid="mobile-map-focus-day"]');
+  const focusNightBtn = fullscreenHeader.querySelector('[data-testid="mobile-map-focus-night"]');
+  const focusAllBtn = fullscreenHeader.querySelector('[data-testid="mobile-map-focus-all"]');
+
+  function isMobileViewport() {
+    return window.innerWidth < 768;
+  }
+
+  function applyZoomTransform(animate = false) {
+    if (!isMobileViewport()) {
+      zoomState.scale = MIN_MAP_ZOOM;
+      zoomState.tx = 0;
+      zoomState.ty = 0;
+      board.style.transform = '';
+      board.classList.remove('is-map-zoomed', 'is-animating');
+      zoomViewport.style.touchAction = '';
+      return;
+    }
+
+    if (animate) {
+      board.classList.add('is-animating');
+      clearTimeout(animTimer);
+      animTimer = setTimeout(() => board.classList.remove('is-animating'), 260);
+    } else {
+      board.classList.remove('is-animating');
+    }
+
+    const isZoomed = zoomState.scale > 1.02;
+    const clamped = isZoomed
+      ? clampPan({
+          tx: zoomState.tx,
+          ty: zoomState.ty,
+          scale: zoomState.scale,
+          boardW: board.offsetWidth || 1,
+          boardH: board.offsetHeight || 1,
+          viewW: zoomViewport.clientWidth || 1,
+          viewH: zoomViewport.clientHeight || 1,
+        })
+      : { tx: 0, ty: 0 };
+
+    zoomState.tx = clamped.tx;
+    zoomState.ty = clamped.ty;
+
+    board.style.transform = isZoomed
+      ? `translate3d(${zoomState.tx.toFixed(1)}px, ${zoomState.ty.toFixed(1)}px, 0) scale(${zoomState.scale.toFixed(3)})`
+      : '';
+
+    board.classList.toggle('is-map-zoomed', zoomState.scale >= 1.5);
+    zoomViewport.style.touchAction = isZoomed || isFullscreen ? 'none' : 'pan-y';
+
+    const pct = Math.round(zoomState.scale * 100);
+    if (zoomLabelEl) zoomLabelEl.textContent = `${toPersianDigits(pct)}٪`;
+    if (zoomOutBtn) zoomOutBtn.disabled = zoomState.scale <= MIN_MAP_ZOOM + 0.01;
+    if (zoomInBtn) zoomInBtn.disabled = zoomState.scale >= MAX_MAP_ZOOM - 0.01;
+    if (zoomResetBtn) zoomResetBtn.disabled = !isZoomed;
+  }
+
+  function setZoom(newScale, { pointX, pointY, animate = true } = {}) {
+    if (!isMobileViewport()) return;
+    const clampedScale = clampZoom(newScale);
+    if (clampedScale <= MIN_MAP_ZOOM + 0.01) {
+      zoomState.scale = MIN_MAP_ZOOM;
+      zoomState.tx = 0;
+      zoomState.ty = 0;
+      applyZoomTransform(animate);
+      return;
+    }
+
+    const rect = zoomViewport.getBoundingClientRect();
+    const viewCenterX = rect.left + rect.width / 2;
+    const viewCenterY = rect.top + rect.height / 2;
+    const res = computeZoomAroundPoint({
+      tx: zoomState.tx,
+      ty: zoomState.ty,
+      oldScale: zoomState.scale,
+      newScale: clampedScale,
+      pointX: pointX ?? viewCenterX,
+      pointY: pointY ?? viewCenterY,
+      viewCenterX,
+      viewCenterY,
+      boardW: board.offsetWidth || rect.width || 1,
+      boardH: board.offsetHeight || rect.height || 1,
+      viewW: zoomViewport.clientWidth || rect.width || 1,
+      viewH: zoomViewport.clientHeight || rect.height || 1,
+    });
+
+    zoomState.scale = res.scale;
+    zoomState.tx = res.tx;
+    zoomState.ty = res.ty;
+    applyZoomTransform(animate);
+  }
+
+  function focusOnPercent(pctX, pctY, targetScale = 2.2) {
+    if (!isMobileViewport()) return;
+    const res = computePercentFocusTransform({
+      pctX,
+      pctY,
+      targetScale,
+      boardW: board.offsetWidth || 1,
+      boardH: board.offsetHeight || 1,
+      viewW: zoomViewport.clientWidth || 1,
+      viewH: zoomViewport.clientHeight || 1,
+    });
+    zoomState.scale = res.scale;
+    zoomState.tx = res.tx;
+    zoomState.ty = res.ty;
+    applyZoomTransform(true);
+  }
+
+  function setFullscreen(nextFullscreen) {
+    isFullscreen = Boolean(nextFullscreen) && isMobileViewport();
+    zoomShell.classList.toggle('is-fullscreen', isFullscreen);
+    fullscreenHeader.classList.toggle('hidden', !isFullscreen);
+    fullscreenHeader.classList.toggle('flex', isFullscreen);
+    if (fullscreenBtn) {
+      fullscreenBtn.classList.toggle('hidden', isFullscreen);
+      fullscreenBtn.classList.toggle('inline-flex', !isFullscreen);
+    }
+    fullscreenHintEl?.classList.toggle('hidden', !isFullscreen);
+    mobileZoomBar.classList.toggle('rounded-xl', isFullscreen);
+    mobileZoomBar.classList.toggle('border-t-0', !isFullscreen);
+    mobileZoomBar.classList.toggle('rounded-b-xl', !isFullscreen);
+    document.body.style.overflow = isFullscreen ? 'hidden' : '';
+
+    if (!isFullscreen && zoomState.scale <= 1.02) {
+      zoomState.scale = MIN_MAP_ZOOM;
+      zoomState.tx = 0;
+      zoomState.ty = 0;
+    }
+    requestAnimationFrame(() => applyZoomTransform(false));
+  }
+
+  zoomInBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setZoom(zoomState.scale + 0.55, { animate: true });
+  });
+
+  zoomOutBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setZoom(zoomState.scale - 0.55, { animate: true });
+  });
+
+  zoomResetBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setZoom(MIN_MAP_ZOOM, { animate: true });
+  });
+
+  fullscreenBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setFullscreen(true);
+  });
+
+  closeFullscreenBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setFullscreen(false);
+  });
+
+  focusDayBtn?.addEventListener('click', () => {
+    audio.playClick();
+    focusOnPercent(25, 54, 2.25);
+  });
+
+  focusNightBtn?.addEventListener('click', () => {
+    audio.playClick();
+    focusOnPercent(75, 54, 2.25);
+  });
+
+  focusAllBtn?.addEventListener('click', () => {
+    audio.playClick();
+    setZoom(MIN_MAP_ZOOM, { animate: true });
+  });
+
+  // Touch Gesture Handling: 2-finger pinch zoom, 1-finger pan when zoomed, double-tap zoom
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let panStartX = 0;
+  let panStartY = 0;
+  let panStartTx = 0;
+  let panStartTy = 0;
+  let dragDistance = 0;
+  let isTouchPanning = false;
+  let isPinching = false;
+  let lastTapTime = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+
+  function getTouchDist(t1, t2) {
+    return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+  }
+
+  function getTouchMid(t1, t2) {
+    return {
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2,
+    };
+  }
+
+  const onTouchStart = (e) => {
+    if (!isMobileViewport()) return;
+    if (e.touches.length === 2) {
+      isPinching = true;
+      isTouchPanning = false;
+      pinchStartDist = Math.max(1, getTouchDist(e.touches[0], e.touches[1]));
+      pinchStartScale = zoomState.scale;
+      board.classList.remove('is-animating');
+    } else if (e.touches.length === 1) {
+      isPinching = false;
+      isTouchPanning = zoomState.scale > 1.02;
+      panStartX = e.touches[0].clientX;
+      panStartY = e.touches[0].clientY;
+      panStartTx = zoomState.tx;
+      panStartTy = zoomState.ty;
+      dragDistance = 0;
+    }
+  };
+
+  const onTouchMove = (e) => {
+    if (!isMobileViewport()) return;
+    if (e.touches.length === 2 && isPinching) {
+      e.preventDefault();
+      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const mid = getTouchMid(e.touches[0], e.touches[1]);
+      const nextScale = clampZoom(pinchStartScale * (dist / pinchStartDist));
+      setZoom(nextScale, { pointX: mid.x, pointY: mid.y, animate: false });
+      dragDistance = 999;
+    } else if (e.touches.length === 1 && isTouchPanning) {
+      const dx = e.touches[0].clientX - panStartX;
+      const dy = e.touches[0].clientY - panStartY;
+      dragDistance = Math.max(dragDistance, Math.hypot(dx, dy));
+      if (dragDistance > 3) {
+        e.preventDefault();
+        zoomState.tx = panStartTx + dx;
+        zoomState.ty = panStartTy + dy;
+        applyZoomTransform(false);
+      }
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    if (!isMobileViewport()) return;
+    if (isPinching && e.touches.length < 2) {
+      isPinching = false;
+      suppressClickUntil = Date.now() + 140;
+      if (e.touches.length === 1 && zoomState.scale > 1.02) {
+        isTouchPanning = true;
+        panStartX = e.touches[0].clientX;
+        panStartY = e.touches[0].clientY;
+        panStartTx = zoomState.tx;
+        panStartTy = zoomState.ty;
+      }
+      return;
+    }
+
+    if (dragDistance > 8) {
+      suppressClickUntil = Date.now() + 140;
+    } else if (e.changedTouches.length === 1 && e.touches.length === 0) {
+      const targetBtn = e.target instanceof Element ? e.target.closest('.map-hotspot-btn') : null;
+      if (!targetBtn) {
+        const now = Date.now();
+        const t = e.changedTouches[0];
+        if (now - lastTapTime < 280 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 32) {
+          e.preventDefault();
+          lastTapTime = 0;
+          if (zoomState.scale < 1.35) {
+            setZoom(2.2, { pointX: t.clientX, pointY: t.clientY, animate: true });
+          } else {
+            setZoom(MIN_MAP_ZOOM, { animate: true });
+          }
+        } else {
+          lastTapTime = now;
+          lastTapX = t.clientX;
+          lastTapY = t.clientY;
+        }
+      }
+    }
+    isTouchPanning = false;
+  };
+
+  // Mouse / Pointer Drag Pan & Wheel Zoom when zoomed on mobile viewport (< 768px)
+  let pointerDragging = false;
+  let pointerId = null;
+  let ptrStartX = 0;
+  let ptrStartY = 0;
+  let ptrStartTx = 0;
+  let ptrStartTy = 0;
+  let ptrDragDist = 0;
+
+  const onPointerDown = (e) => {
+    if (!isMobileViewport() || e.pointerType === 'touch' || zoomState.scale <= 1.02) return;
+    pointerDragging = true;
+    pointerId = e.pointerId;
+    ptrStartX = e.clientX;
+    ptrStartY = e.clientY;
+    ptrStartTx = zoomState.tx;
+    ptrStartTy = zoomState.ty;
+    ptrDragDist = 0;
+    board.classList.remove('is-animating');
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointerDragging || e.pointerId !== pointerId) return;
+    const dx = e.clientX - ptrStartX;
+    const dy = e.clientY - ptrStartY;
+    ptrDragDist = Math.max(ptrDragDist, Math.hypot(dx, dy));
+    if (ptrDragDist > 3) {
+      zoomState.tx = ptrStartTx + dx;
+      zoomState.ty = ptrStartTy + dy;
+      applyZoomTransform(false);
+    }
+  };
+
+  const onPointerUp = (e) => {
+    if (!pointerDragging || e.pointerId !== pointerId) return;
+    pointerDragging = false;
+    pointerId = null;
+    if (ptrDragDist > 8) {
+      suppressClickUntil = Date.now() + 140;
+    }
+  };
+
+  const onWheel = (e) => {
+    if (!isMobileViewport()) return;
+    if (!isFullscreen && zoomState.scale <= 1.02 && !e.ctrlKey) return;
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.35 : -0.35;
+    setZoom(zoomState.scale + delta, { pointX: e.clientX, pointY: e.clientY, animate: false });
+  };
+
+  const onCaptureClick = (e) => {
+    if (Date.now() < suppressClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const onWindowResize = () => {
+    if (!isMobileViewport() && isFullscreen) {
+      setFullscreen(false);
+    } else {
+      applyZoomTransform(false);
+    }
+  };
+
+  const onWindowKeyDown = (e) => {
+    if (e.defaultPrevented) return;
+    if (e.key === 'Escape' && isFullscreen && !document.querySelector('[role="dialog"]')) {
+      e.preventDefault();
+      setFullscreen(false);
+    }
+  };
+
+  zoomViewport.addEventListener('touchstart', onTouchStart, { passive: true });
+  zoomViewport.addEventListener('touchmove', onTouchMove, { passive: false });
+  zoomViewport.addEventListener('touchend', onTouchEnd, { passive: false });
+  zoomViewport.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+  zoomViewport.addEventListener('wheel', onWheel, { passive: false });
+  zoomViewport.addEventListener('click', onCaptureClick, true);
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('keydown', onWindowKeyDown);
+
+  applyZoomTransform(false);
 
   // 6. Mobile-Only Route Explorer Panel (strictly hidden on md: / >= 768px desktop)
   const mobileExplorer = document.createElement('section');
@@ -569,4 +1011,20 @@ export function renderMapView(
 
   shell.appendChild(stageViewport);
   container.appendChild(shell);
+
+  return () => {
+    clearTimeout(animTimer);
+    document.body.style.overflow = '';
+    zoomViewport.removeEventListener('touchstart', onTouchStart);
+    zoomViewport.removeEventListener('touchmove', onTouchMove);
+    zoomViewport.removeEventListener('touchend', onTouchEnd);
+    zoomViewport.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+    zoomViewport.removeEventListener('wheel', onWheel);
+    zoomViewport.removeEventListener('click', onCaptureClick, true);
+    window.removeEventListener('resize', onWindowResize);
+    window.removeEventListener('keydown', onWindowKeyDown);
+  };
 }

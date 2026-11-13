@@ -14,6 +14,18 @@
   overflow: hidden;
 }
 
+.map-zoom-shell {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.map-zoom-viewport {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .map-board {
   position: relative;
   width: 100%;
@@ -227,26 +239,92 @@
     overflow-x: hidden;
     overflow-y: visible;
   }
+  .map-zoom-shell {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .map-zoom-shell.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: radial-gradient(circle at 50% 20%, #17233a 0%, #050912 100%);
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  .map-zoom-viewport {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0.85rem 0.85rem 0 0;
+    border: 2px solid rgba(251, 191, 36, 0.35);
+    border-bottom: none;
+    background: #0f172a;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .map-zoom-shell.is-fullscreen .map-zoom-viewport {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.85rem;
+    border: 1.5px solid rgba(251, 191, 36, 0.35);
+    touch-action: none;
+  }
   .map-board {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    border-radius: 0.85rem;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    transform-origin: center center;
+    will-change: transform;
+  }
+  .map-board.is-animating {
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .persian-map-plaque,
   .stage-node-stars,
   .map-key-marker {
     display: none;
   }
+  .map-board.is-map-zoomed .persian-map-plaque,
+  .map-board.is-map-zoomed .stage-node-stars,
+  .map-board.is-map-zoomed .map-key-marker {
+    display: block;
+  }
+  .map-board.is-map-zoomed .stage-node-stars {
+    display: flex;
+    font-size: 0.34rem;
+    padding: 0 2px;
+  }
+  .map-board.is-map-zoomed .persian-map-plaque {
+    font-size: 0.34rem;
+    padding: 1px 4px;
+    min-width: 34px;
+    border-radius: 0.25rem;
+    line-height: 1.25;
+  }
+  .map-board.is-map-zoomed .plaque--wood-lg {
+    font-size: 0.42rem;
+    padding: 1.5px 7px;
+    min-width: 40px;
+  }
+  .map-board.is-map-zoomed .map-key-marker {
+    font-size: 0.34rem;
+    padding: 1px 4px;
+  }
   .stage-node {
-    width: 21px;
-    height: 21px;
-    font-size: 0.65rem;
+    width: 19px;
+    height: 19px;
+    font-size: 0.6rem;
     border-width: 1.5px;
   }
   .map-companion-marker {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     transform: translate(-50%, -105%);
   }
   .map-decoy-btn {

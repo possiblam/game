@@ -213,7 +213,7 @@ export function initApp(rootEl) {
     closeActiveModal();
     audio.setMusicTheme('map');
     sceneManager.mount('map', 'playing', (mountEl) => {
-      renderMapView(mountEl, {
+      return renderMapView(mountEl, {
         state,
         audio,
         onSelectStage: (stageMeta) => {
