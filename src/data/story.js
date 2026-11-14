@@ -2,7 +2,7 @@ export const CHARACTERS = {
   arad: {
     id: 'arad',
     name: 'آراد',
-    title: 'ماجراجوی شجاع و عاشق ابزارها',
+    title: 'ماجراجوی شجاع و مهندس سازه‌های مکانیکی',
     color: '#ef6c2f',
   },
   nika: {
@@ -10,6 +10,18 @@ export const CHARACTERS = {
     name: 'نیکا',
     title: 'باهوش، دقیق و استاد معماها',
     color: '#7c3aed',
+  },
+  raha: {
+    id: 'raha',
+    name: 'رها',
+    title: 'ستاره‌شناس، دقیق و کاشف نشانه‌ها و الگوها',
+    color: '#06b6d4',
+  },
+  pico: {
+    id: 'pico',
+    name: 'پیکو',
+    title: 'ربات شناور و راهنمای جزیره دو فانوس',
+    color: '#fbbf24',
   },
 };
 
@@ -36,6 +48,29 @@ export const INTRO_SLIDES = [
   },
 ];
 
+export const LANTERNS_INTRO_SLIDES = [
+  {
+    speaker: 'narrator',
+    title: 'افسانه جزیره دو فانوس',
+    text: 'سال‌ها پیش، در جزیره شگفت‌انگیز «دو فانوس» دانشمندان و کاوشگران دو قلمرو خورشید و ماه گنجی از دانش، اختراعات نادر، بذر گیاهان کمیاب و نقشه‌های ناشناخته را در دل کوه مرکزی بنا کردند.',
+  },
+  {
+    speaker: 'pico',
+    title: 'پیام آخرین نگهبان جزیره',
+    text: 'بیپ-بوپ! سلام! من پیکو هستم، ربات راهنما! وقتی طوفان عظیم دو فانوس خورشید و ماه را خاموش کرد، آخرین نگهبان این جعبه و قطب‌نما را فرستاد تا دو کاوشگر شجاع راز جزیره را بیدار کنند.',
+  },
+  {
+    speaker: 'arad',
+    title: 'سرزمین خورشید (مسیر روزانه)',
+    text: 'آراد: «سمت چپ، قلمرو خورشید است! از برج ساعت سایه‌ها و گلخانه هوشمند گرفته تا پل چرخ‌دنده‌ای، معدن رنگی، توربین‌های بادی و سکوهای شناور رودخانه!»',
+  },
+  {
+    speaker: 'raha',
+    title: 'سرزمین ماه (مسیر شبانه)',
+    text: 'رها: «و سمت راست، قلمرو شبانه و اسرارآمیز ماه است با غار پژواک، رصدخانه ستارگان، سردخانه، هزارتوی آینه‌ها، تله‌کابین نجات و تالار سنگ‌های نورانی! یادتان باشد هرچه می‌درخشد گنج نیست!»',
+  },
+];
+
 export const DECOY_CHESTS = {
   daytime: {
     id: 'decoy-day',
@@ -55,6 +90,25 @@ export const DECOY_CHESTS = {
   },
 };
 
+export const LANTERNS_DECOY_CHESTS = {
+  daytime: {
+    id: 'lanterns-decoy-day',
+    route: 'daytime',
+    title: 'محفظه طلایی در حاشیه معدن',
+    noteText: 'هرکس تنها به دنبال طلا باشد، هرگز گنج واقعی را نخواهد یافت.',
+    aradLine: 'عجب! اینجا پر از برق مصنوعی و یک نقشه پاره‌شده است، اما طلای واقعی نیست!',
+    picoLine: 'پیکو: «این یکی واقعاً ما را گول زد! اما این پیام حتماً معنایی دارد؛ گنج واقعی جزیره فقط طلا نیست!»',
+  },
+  nighttime: {
+    id: 'lanterns-decoy-night',
+    route: 'nighttime',
+    title: 'صندوق اسرارآمیز نزدیک هزارتو',
+    noteText: 'دو فانوس باید با هم روشن شوند.',
+    aradLine: 'یک قطعه فلزی تقلبی و این نوشته! چرا نوشته هر دو فانوس؟',
+    picoLine: 'پیکو: «پس راز گنج در همکاری هر دو مسیر خورشید و ماه است! تا هر دو نشان روشن نشوند معبد باز نمی‌شود.»',
+  },
+};
+
 export const FINAL_VICTORY_STORY = {
   title: 'معبد گنج دو جهان',
   openingText: 'آراد و نیکا سرانجام پس از عبور از سرزمین روشنایی و سرزمین تاریکی، به دروازه طلایی قله کوهستان رسیدند.',
@@ -62,24 +116,52 @@ export const FINAL_VICTORY_STORY = {
   congratulationsText: 'تبریک! شما راز دو جهان را کشف کردید و به گنج افسانه‌ای رسیدید. این ماجراجویی فقط با هوش، دقت و همکاری شما ممکن شد!',
 };
 
+export const LANTERNS_FINAL_VICTORY_STORY = {
+  title: 'معبد مرکزی جزیره دو فانوس',
+  openingText: 'آراد، رها و پیکو پس از پشت سر گذاشتن دوازده آزمون دشوار، با نشان طلایی خورشید و نشان نقره‌ای ماه به معبد باشکوه قله جزیره رسیدند.',
+  emblemText: 'نشان خورشید و نشان ماه با هم روشن می‌شوند... انرژی دو فانوس قفل گنج دانش و اختراعات باستانی را می‌گشاید!',
+  congratulationsText:
+    '«آفرین، ماجراجوی جوان! تو دوازده آزمون را پشت سر گذاشتی و دو فانوس را دوباره روشن کردی. اکنون راز بزرگ جزیره را می‌دانی: گنج واقعی، فقط چیزی نیست که بتوان در صندوق گذاشت؛ گنج واقعی، دانشی است که به دست می‌آوری، مهارتی است که یاد می‌گیری و دوستی‌ای است که در مسیر ماجراجویی می‌سازی. اکنون نگهبان جدید جزیره دو فانوس، تو هستی!»',
+  treasuresInside: [
+    { icon: '📚', title: 'کتابخانه دانش باستان' },
+    { icon: '🗺️', title: 'نقشه سرزمین‌های ناشناخته' },
+    { icon: '💎', title: 'کریستال‌های انرژی' },
+    { icon: '🌱', title: 'دانه‌های گیاهان نایاب' },
+    { icon: '⚙️', title: 'ابزارهای علمی و مهندسی' },
+    { icon: '🧭', title: 'قطب‌نمای جادویی' },
+  ],
+};
+
 export const GUIDE_SECTIONS = [
   {
-    title: 'هدف بازی',
-    body: 'باید همراه آراد و نیکا از هر دو مسیر «روز» و «شب» عبور کنید. هر مسیر ۶ مرحله جذاب دارد. بعد از کامل کردن هر ۱۲ مرحله، معبد گنج افسانه‌ای در قله کوهستان باز می‌شود.',
+    title: 'نقشه‌های پلکانی (سخت ← سخت‌تر)',
+    body: 'بازی دارای دو نقشه بزرگ و مستقل است: ابتدا نقشه «راز گنج دو جهان» (سخت) را فتح کنید تا دروازه نقشه پیشرفته «راز دوازده نشان؛ گنج دو فانوس» (سخت‌تر) به رویتان باز شود.',
   },
   {
-    title: 'کلیدهای مخفی',
+    title: 'دو مسیر مستقل و ۱۲ آزمون',
+    body: 'در هر نقشه، دو مسیر روز و شب وجود دارد که هرکدام ۶ چالش اختصاصی دارند. ترتیب انجام مسیرها آزاد است و پیشرفت هر مسیر مستقل ذخیره می‌شود.',
+  },
+  {
+    title: 'کلیدهای مخفی و قفل مرحله سوم',
     body: 'در مرحله دوم هر مسیر یک کلید ویژه پنهان شده است: کلید مغناطیسی در مسیر روز و کلید نقره‌ای در مسیر شب. برای باز کردن دروازه مرحله سوم به این کلیدها نیاز دارید!',
   },
   {
-    title: 'صندوق‌های تقلبی',
-    body: 'در هر دو مسیر یک صندوق فریبنده وجود دارد. کشف آن‌ها بامزه و سرگرم‌کننده است اما مسیر اصلی شما را متوقف نمی‌کند.',
-  },
-  {
-    title: 'ستاره‌ها و راهنمایی',
-    body: 'در هر مرحله می‌توانید تا ۳ ستاره بگیرید و اگر جایی گیر کردید، دکمه «راهنمایی» را بزنید تا نیکا در سه قدم شما را راهنمایی کند.',
+    title: 'صندوق‌های تقلبی، ستاره‌ها و راهنمایی',
+    body: 'صندوق‌های فریبنده رازهای جالبی دارند اما اجباری نیستند. در هر مرحله تا ۳ ستاره و امتیاز تجربه (XP) می‌گیرید و راهنمای سه‌مرحله‌ای همیشه کنارتان است.',
   },
 ];
+
+export function getIntroSlidesForWorld(worldId) {
+  return worldId === 'two-lanterns' ? LANTERNS_INTRO_SLIDES : INTRO_SLIDES;
+}
+
+export function getDecoyChestsForWorld(worldId) {
+  return worldId === 'two-lanterns' ? LANTERNS_DECOY_CHESTS : DECOY_CHESTS;
+}
+
+export function getFinalStoryForWorld(worldId) {
+  return worldId === 'two-lanterns' ? LANTERNS_FINAL_VICTORY_STORY : FINAL_VICTORY_STORY;
+}
 
 export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
   if (characterId === 'arad') {
@@ -102,6 +184,56 @@ export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
         <rect x="20" y="21" width="24" height="4" rx="2" fill="#0284c7"/>
         <circle cx="25" cy="23" r="2.5" fill="#bae6fd" stroke="#0369a1" stroke-width="1"/>
         <circle cx="39" cy="23" r="2.5" fill="#bae6fd" stroke="#0369a1" stroke-width="1"/>
+      </svg>
+    `;
+  }
+
+  if (characterId === 'raha') {
+    const mouth = mood === 'excited'
+      ? '<path d="M27 38 Q32 44 37 38 Z" fill="#0e7490" stroke="#164e63" stroke-width="1.2"/>'
+      : '<path d="M27 38 Q32 42 37 38" fill="none" stroke="#164e63" stroke-width="2" stroke-linecap="round"/>';
+    return `
+      <svg viewBox="0 0 64 64" class="w-full h-full" aria-hidden="true">
+        <circle cx="32" cy="32" r="30" fill="#cffafe" stroke="#06b6d4" stroke-width="3"/>
+        <path d="M15 54 C18 44 46 44 49 54" fill="#0284c7"/>
+        <circle cx="32" cy="30" r="14" fill="#fde6d8"/>
+        <path d="M16 30 C16 14 48 14 48 30 C44 20 20 20 16 30 Z" fill="#1e1b4b"/>
+        <path d="M15 26 C13 34 15 41 19 44" stroke="#1e1b4b" stroke-width="5" stroke-linecap="round"/>
+        <path d="M49 26 C51 34 49 41 45 44" stroke="#1e1b4b" stroke-width="5" stroke-linecap="round"/>
+        <!-- Star Hairpin -->
+        <polygon points="44,18 46,21 49,21 47,23 48,26 44,24 41,26 42,23 40,21 43,21" fill="#fde047"/>
+        <circle cx="26.5" cy="30" r="2.2" fill="#0f172a"/>
+        <circle cx="37.5" cy="30" r="2.2" fill="#0f172a"/>
+        <circle cx="27.2" cy="29.3" r="0.8" fill="#ffffff"/>
+        <circle cx="38.2" cy="29.3" r="0.8" fill="#ffffff"/>
+        <circle cx="23" cy="34" r="2.1" fill="#fda4af" opacity="0.55"/>
+        <circle cx="41" cy="34" r="2.1" fill="#fda4af" opacity="0.55"/>
+        ${mouth}
+      </svg>
+    `;
+  }
+
+  if (characterId === 'pico') {
+    const visorSmile = mood === 'excited'
+      ? '<path d="M26 35 Q32 40 38 35" fill="none" stroke="#fde047" stroke-width="2.2" stroke-linecap="round"/>'
+      : '<path d="M27 35 Q32 38 37 35" fill="none" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>';
+    return `
+      <svg viewBox="0 0 64 64" class="w-full h-full" aria-hidden="true">
+        <circle cx="32" cy="32" r="30" fill="#0f172a" stroke="#fbbf24" stroke-width="3"/>
+        <!-- Antenna -->
+        <line x1="32" y1="16" x2="32" y2="9" stroke="#94a3b8" stroke-width="2.5"/>
+        <circle cx="32" cy="8" r="3.5" fill="#fde047"/>
+        <!-- Floating Robot Head -->
+        <rect x="16" y="17" width="32" height="26" rx="10" fill="#e2e8f0" stroke="#38bdf8" stroke-width="2.5"/>
+        <rect x="20" y="21" width="24" height="17" rx="6" fill="#0f172a"/>
+        <circle cx="26" cy="28" r="2.8" fill="#22d3ee"/>
+        <circle cx="38" cy="28" r="2.8" fill="#22d3ee"/>
+        <circle cx="27" cy="27" r="1" fill="#ffffff"/>
+        <circle cx="39" cy="27" r="1" fill="#ffffff"/>
+        ${visorSmile}
+        <!-- Hover Thruster -->
+        <path d="M22 44 H42 L38 51 H26 Z" fill="#f59e0b"/>
+        <ellipse cx="32" cy="54" rx="7" ry="2.2" fill="#38bdf8" opacity="0.8"/>
       </svg>
     `;
   }

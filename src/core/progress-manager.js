@@ -1,4 +1,5 @@
-import { createInitialGameState, normalizeGameState } from './game-state.js';
+import { createInitialGameState, normalizeGameState, getTotalCompletedStages } from './game-state.js';
+import { WORLDS } from '../data/worlds.js';
 
 const STORAGE_KEY = 'treasure_adventure_two_worlds_v1';
 
@@ -29,14 +30,17 @@ export class ProgressManager {
 
   hasSavedProgress() {
     const state = this.load();
-    return Boolean(
-      state.hasStarted ||
-      state.introSeen ||
-      state.completedStages.daytime.length > 0 ||
-      state.completedStages.nighttime.length > 0 ||
-      state.keys.magnetic ||
-      state.keys.silver
-    );
+    const anyWorldProgress = WORLDS.some((w) => {
+      const ws = state.worlds?.[w.id];
+      return Boolean(
+        ws?.introSeen ||
+          getTotalCompletedStages(state, w.id) > 0 ||
+          ws?.keys?.magnetic ||
+          ws?.keys?.silver ||
+          ws?.finalCompleted
+      );
+    });
+    return Boolean(state.hasStarted || anyWorldProgress);
   }
 
   reset() {

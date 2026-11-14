@@ -28,7 +28,7 @@ export function showModal({
   overlay.setAttribute('aria-label', title);
 
   const card = document.createElement('div');
-  card.className = `storybook-panel animate-modal-in w-full ${maxWidth} rounded-2xl p-5 sm:p-6 text-slate-100`;
+  card.className = `storybook-panel animate-modal-in w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl p-5 sm:p-6 text-slate-100`;
 
   const header = document.createElement('div');
   header.className = 'flex items-center justify-between gap-4 pb-3 border-b border-amber-400/25';

@@ -1,6 +1,7 @@
 import { UI_TEXT, toPersianDigits, formatTimePersian } from '../data/translations.js';
-import { FINAL_VICTORY_STORY, renderCharacterAvatarSvg } from '../data/story.js';
-import { getTotalCompletedStages, getTotalStars } from '../core/game-state.js';
+import { getWorldConfig } from '../data/worlds.js';
+import { CHARACTERS, getFinalStoryForWorld, renderCharacterAvatarSvg } from '../data/story.js';
+import { getTotalCompletedStages, getTotalStars, getWorldState } from '../core/game-state.js';
 import { showModal } from './modal.js';
 
 export function renderStarsRow(earnedCount, maxCount = 3) {
@@ -25,16 +26,35 @@ export function showStageResultModal({
   hintsUsed,
   elapsedSeconds,
   keyGranted,
+  xpEarned = 120,
+  skillBadge = null,
   hasNextStage,
   onReplay,
   onNextStage,
   onBackToMap,
 }) {
+  const world = getWorldConfig(stage.worldId || 'two-worlds');
+  const guide = CHARACTERS[world.guideCharacterId] || CHARACTERS.nika;
+  const keyLabel = keyGranted === 'magnetic' ? world.daytimeKeyName : world.nighttimeKeyName;
+
   const keyBanner = keyGranted
     ? `
       <div class="mt-3 p-3 rounded-xl bg-amber-900/50 border border-amber-400 text-amber-200 font-bold text-sm flex items-center gap-2">
         <span aria-hidden="true">🗝️</span>
-        <span>${keyGranted === 'magnetic' ? UI_TEXT.magneticKey : UI_TEXT.silverKey} به کیف ابزار شما اضافه شد!</span>
+        <span>${keyLabel} به کیف ابزار شما اضافه شد!</span>
+      </div>
+    `
+    : '';
+
+  const badgeBanner = skillBadge
+    ? `
+      <div class="mt-2.5 flex flex-wrap items-center justify-center gap-2 text-xs font-extrabold">
+        <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-200">
+          🏅 نشان مهارت: ${skillBadge}
+        </span>
+        <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 tabular-nums">
+          ✨ +${toPersianDigits(xpEarned)} امتیاز تجربه
+        </span>
       </div>
     `
     : '';
@@ -61,6 +81,11 @@ export function showStageResultModal({
     });
   }
 
+  const guideLine =
+    guide.id === 'pico'
+      ? 'پیکو: «بیپ-بوپ! محشر بود! یک نشان دیگر به سوی روشن کردن دو فانوس به دست آوردیم!»'
+      : 'نیکا: «فوق‌العاده بود! با هم هیچ معمایی سد راهمان نمی‌شود.»';
+
   showModal({
     title: `آفرین! ${stage.title} کامل شد`,
     closeOnBackdrop: false,
@@ -69,6 +94,7 @@ export function showStageResultModal({
         ${renderStarsRow(stars, 3)}
         <p class="text-amber-300 font-extrabold text-lg m-0">${toPersianDigits(stars)} ستاره از ۳ ستاره گرفتید!</p>
       </div>
+      ${badgeBanner}
       ${keyBanner}
       <div class="grid grid-cols-3 gap-2.5 mt-4 text-center tabular-nums">
         <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
@@ -85,32 +111,54 @@ export function showStageResultModal({
         </div>
       </div>
       <div class="mt-4 flex items-center gap-3 text-xs sm:text-sm text-slate-200">
-        <div class="w-10 h-10 shrink-0">${renderCharacterAvatarSvg('nika', 'excited')}</div>
-        <span>نیکا: «فوق‌العاده بود! با هم هیچ معمایی سد راهمان نمی‌شود.»</span>
+        <div class="w-10 h-10 shrink-0">${renderCharacterAvatarSvg(guide.id, 'excited')}</div>
+        <span>${guideLine}</span>
       </div>
     `,
     actions,
   });
 }
 
-export function renderFinalTempleScene(container, { state, audio, onCompleteCeremony, onBackToMap, onResetAdventure }) {
+export function renderFinalTempleScene(
+  container,
+  {
+    state,
+    worldConfig = null,
+    nextWorld = null,
+    audio,
+    onCompleteCeremony,
+    onBackToMap,
+    onEnterNextWorld,
+    onResetAdventure,
+  }
+) {
+  const world = worldConfig || getWorldConfig(state.activeWorldId);
+  const ws = getWorldState(state, world.id);
+  const finalStory = getFinalStoryForWorld(world.id);
+  const isLanternsWorld = world.id === 'two-lanterns';
+
   let sunPlaced = false;
   let moonPlaced = false;
   let isOpening = false;
   let justBurst = false;
-  let chestOpened = Boolean(state.finalCompleted);
+  let chestOpened = Boolean(ws.finalCompleted);
 
-  const totalStars = getTotalStars(state);
-  const totalCompleted = getTotalCompletedStages(state);
+  const totalStars = getTotalStars(state, world.id);
+  const totalCompleted = getTotalCompletedStages(state, world.id);
   const decoyCount =
-    (state.decoyDiscovered?.daytime ? 1 : 0) + (state.decoyDiscovered?.nighttime ? 1 : 0);
+    (ws.decoyDiscovered?.daytime ? 1 : 0) + (ws.decoyDiscovered?.nighttime ? 1 : 0);
 
-  const rankTitle =
-    totalStars >= 32
-      ? 'اسطوره طلایی دو جهان'
+  const rankTitle = isLanternsWorld
+    ? totalStars >= 32
+      ? 'نگهبان افسانه‌ای دو فانوس'
       : totalStars >= 24
-      ? 'نگهبان بزرگ خورشید و ماه'
-      : 'ماجراجوی شجاع گنج';
+      ? 'کاوشگر ارشد علم و نور'
+      : 'نگهبان جدید جزیره دو فانوس'
+    : totalStars >= 32
+    ? 'اسطوره طلایی دو جهان'
+    : totalStars >= 24
+    ? 'نگهبان بزرگ خورشید و ماه'
+    : 'ماجراجوی شجاع گنج';
 
   if (chestOpened) {
     sunPlaced = true;
@@ -218,7 +266,6 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
       const h = window.innerHeight;
       ctx2d.clearRect(0, 0, w, h);
 
-      // Process rockets
       for (let i = rockets.length - 1; i >= 0; i--) {
         const r = rockets[i];
         r.x += r.vx;
@@ -234,7 +281,6 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
         }
       }
 
-      // Process particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -279,23 +325,113 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
 
   function render() {
     const bothPlaced = sunPlaced && moonPlaced;
+    const sunBtnLabel = isLanternsWorld
+      ? sunPlaced
+        ? 'فانوس خورشید روشن ✓'
+        : 'روشن کردن فانوس خورشید'
+      : sunPlaced
+      ? 'نشان خورشید روشن ✓'
+      : 'قرار دادن نشان خورشید';
+    const moonBtnLabel = isLanternsWorld
+      ? moonPlaced
+        ? 'فانوس ماه روشن ✓'
+        : 'روشن کردن فانوس ماه'
+      : moonPlaced
+      ? 'نشان ماه روشن ✓'
+      : 'قرار دادن نشان ماه';
+
+    const nextWorldUnlockHtml =
+      chestOpened && nextWorld
+        ? `
+          <div class="mt-4 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-l from-rose-950/70 via-amber-950/60 to-slate-900 border-2 border-amber-300 text-right flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg" data-testid="next-world-unlocked-banner">
+            <div>
+              <div class="text-sm sm:text-base font-extrabold text-amber-200">
+                🎉 نقشه جدید «${nextWorld.title}» (${nextWorld.difficultyLabel}) باز شد!
+              </div>
+              <p class="text-xs text-slate-200 m-0 mt-1">
+                دو فانوس جزیره اسرارآمیز در انتظار شماست؛ همراه آراد، رها و ربات پیکو به چالش سخت‌تر بروید!
+              </p>
+            </div>
+            <button type="button" id="enter-next-world-btn" data-testid="enter-next-world-btn"
+              class="px-5 py-3 rounded-xl btn-primary-gold text-xs sm:text-sm whitespace-nowrap shrink-0">
+              🗺 ورود به نقشه سخت‌تر!
+            </button>
+          </div>
+        `
+        : '';
+
+    const lanternsTreasuresHtml =
+      chestOpened && isLanternsWorld && Array.isArray(finalStory.treasuresInside)
+        ? `
+          <div class="mt-4 p-3.5 rounded-2xl bg-slate-900/90 border border-amber-400/35 text-right">
+            <div class="text-xs sm:text-sm font-extrabold text-amber-300 mb-2.5 text-center">
+              گنجینه واقعی درون معبد دو فانوس:
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              ${finalStory.treasuresInside
+                .map(
+                  (item) => `
+                  <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-800/85 border border-slate-700 text-xs font-bold text-slate-100">
+                    <span class="text-base shrink-0" aria-hidden="true">${item.icon}</span>
+                    <span>${item.title}</span>
+                  </div>
+                `
+                )
+                .join('')}
+            </div>
+          </div>
+        `
+        : '';
+
+    const companionsHtml = isLanternsWorld
+      ? `
+        <div class="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+          <div class="w-11 h-11 sm:w-12 sm:h-12 shrink-0 animate-float">${renderCharacterAvatarSvg('arad', 'excited')}</div>
+          <div class="w-11 h-11 sm:w-12 sm:h-12 shrink-0 animate-float" style="animation-delay:0.25s">${renderCharacterAvatarSvg('raha', 'excited')}</div>
+          <div class="text-xs sm:text-sm font-bold text-amber-200 bg-slate-800/85 px-3.5 py-2.5 rounded-xl border border-amber-400/35 max-w-md text-right sm:text-center">
+            ${
+              chestOpened
+                ? 'آراد، رها و پیکو: «هورا! هر دو فانوس روشن شدند و دانش جزیره دوباره زنده شد!»'
+                : bothPlaced
+                ? 'آراد، رها و پیکو: «دو فانوس درخشیدند! حالا در صندوق بزرگ دانش را باز کنیم!»'
+                : 'آراد، رها و پیکو: «ابتدا هر دو فانوس خورشید و ماه را روی پایه‌ها روشن کنیم!»'
+            }
+          </div>
+          <div class="w-11 h-11 sm:w-12 sm:h-12 shrink-0 animate-float" style="animation-delay:0.45s">${renderCharacterAvatarSvg('pico', 'excited')}</div>
+        </div>
+      `
+      : `
+        <div class="mt-4 sm:mt-5 flex items-center justify-center gap-3 sm:gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 animate-float">${renderCharacterAvatarSvg('arad', 'excited')}</div>
+          <div class="text-xs sm:text-sm font-bold text-amber-200 bg-slate-800/85 px-3.5 py-2.5 rounded-xl border border-amber-400/35 text-right sm:text-center">
+            ${
+              chestOpened
+                ? 'آراد و نیکا: «هورا! گنج دو جهان گشوده شد و افسانه‌مان جاودانه ماند!»'
+                : bothPlaced
+                ? 'آراد و نیکا: «دروازه باز شد! حالا وقت باز کردن صندوق گنج است!»'
+                : 'آراد و نیکا: «نشان‌های خورشید و ماه را روی پایه‌ها بگذاریم!»'
+            }
+          </div>
+          <div class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 animate-float" style="animation-delay:0.4s">${renderCharacterAvatarSvg('nika', 'excited')}</div>
+        </div>
+      `;
 
     contentHost.innerHTML = `
       <div class="storybook-panel relative z-10 w-full max-w-3xl rounded-3xl p-4 sm:p-8 text-center">
         <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/45 text-amber-200 text-xs sm:text-sm font-extrabold mb-2">
-          <span>${chestOpened ? '👑 فتح قله افسانه‌ای' : bothPlaced ? '✨ دروازه باستانی گشوده شد' : '🏛️ آخرین آزمون دو جهان'}</span>
+          <span>${chestOpened ? '👑 فتح قله افسانه‌ای' : bothPlaced ? '✨ دروازه باستانی گشوده شد' : `🏛️ ${world.title}`}</span>
         </div>
 
-        <h1 class="text-2xl sm:text-4xl font-extrabold text-amber-300 mb-2">${FINAL_VICTORY_STORY.title}</h1>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-amber-300 mb-2">${finalStory.title}</h1>
         <p class="text-xs sm:text-base text-slate-200 max-w-2xl mx-auto leading-relaxed">
           ${
             chestOpened
-              ? FINAL_VICTORY_STORY.congratulationsText
+              ? finalStory.congratulationsText
               : isOpening
               ? 'قفل‌های باستانی در حال باز شدن هستند... آماده انفجار نور و گنج باشید!'
               : bothPlaced
-              ? FINAL_VICTORY_STORY.emblemText
-              : FINAL_VICTORY_STORY.openingText
+              ? finalStory.emblemText
+              : finalStory.openingText
           }
         </p>
 
@@ -319,17 +455,17 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
               : ''
           }
 
-          <!-- Dual Sun & Moon Crest Pedestals + Energy Conduits -->
+          <!-- Dual Sun & Moon Crest/Lantern Pedestals -->
           <div class="relative z-10 flex items-center justify-center gap-2.5 sm:gap-6 mb-4 sm:mb-5">
-            <button type="button" id="place-sun-crest"
-              class="flex-1 max-w-[210px] px-2.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 min-h-[76px] ${
+            <button type="button" id="place-sun-crest" data-testid="place-sun-crest"
+              class="flex-1 max-w-[220px] px-2.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 min-h-[76px] ${
                 sunPlaced
                   ? 'bg-gradient-to-b from-orange-500/35 to-amber-900/40 border-amber-300 text-amber-100 shadow-lg shadow-orange-500/25'
                   : 'bg-slate-800/90 hover:bg-orange-950/60 border-orange-400/75 text-orange-200 animate-pulse'
               }"
               ${sunPlaced || isOpening ? 'disabled' : ''}>
-              <span class="text-2xl sm:text-3xl" aria-hidden="true">☀️</span>
-              <span class="text-xs sm:text-sm font-extrabold leading-tight sm:whitespace-nowrap">${sunPlaced ? 'نشان خورشید روشن ✓' : 'قرار دادن نشان خورشید'}</span>
+              <span class="text-2xl sm:text-3xl" aria-hidden="true">${isLanternsWorld ? '🏮' : '☀️'}</span>
+              <span class="text-xs sm:text-sm font-extrabold leading-tight sm:whitespace-nowrap">${sunBtnLabel}</span>
             </button>
 
             <div class="hidden sm:flex items-center gap-1 text-amber-300/80 text-lg font-extrabold" aria-hidden="true">
@@ -338,22 +474,21 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
               <span class="${moonPlaced ? 'text-cyan-300' : 'text-slate-600'}">━</span>
             </div>
 
-            <button type="button" id="place-moon-crest"
-              class="flex-1 max-w-[210px] px-2.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 min-h-[76px] ${
+            <button type="button" id="place-moon-crest" data-testid="place-moon-crest"
+              class="flex-1 max-w-[220px] px-2.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 min-h-[76px] ${
                 moonPlaced
                   ? 'bg-gradient-to-b from-cyan-500/35 to-sky-900/40 border-cyan-300 text-cyan-100 shadow-lg shadow-cyan-500/25'
                   : 'bg-slate-800/90 hover:bg-cyan-950/60 border-cyan-400/75 text-cyan-200 animate-pulse'
               }"
               ${moonPlaced || isOpening ? 'disabled' : ''}>
-              <span class="text-2xl sm:text-3xl" aria-hidden="true">🌙</span>
-              <span class="text-xs sm:text-sm font-extrabold leading-tight sm:whitespace-nowrap">${moonPlaced ? 'نشان ماه روشن ✓' : 'قرار دادن نشان ماه'}</span>
+              <span class="text-2xl sm:text-3xl" aria-hidden="true">${isLanternsWorld ? '🔮' : '🌙'}</span>
+              <span class="text-xs sm:text-sm font-extrabold leading-tight sm:whitespace-nowrap">${moonBtnLabel}</span>
             </button>
           </div>
 
           <!-- Temple Gate & Legendary Golden Chest -->
           <div class="relative z-10 flex flex-col items-center">
             <div class="relative w-64 sm:w-72 h-44 flex items-center justify-center overflow-hidden rounded-2xl bg-slate-900/75 border border-amber-400/25">
-              <!-- Parting Stone & Gold Temple Doors (slide open when both crests are placed) -->
               <div class="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-800 via-slate-900 to-amber-950/90 border-l-2 border-amber-400/50 z-20 transition-transform duration-700 ease-in-out flex items-center justify-start pl-2 ${
                 bothPlaced ? 'translate-x-full' : 'translate-x-0'
               }">
@@ -365,7 +500,6 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
                 <span class="text-cyan-300/70 text-xl">🌙</span>
               </div>
 
-              <!-- Royal Treasure Chest SVG -->
               <svg viewBox="0 0 240 165" class="w-60 h-40 relative z-10 ${
                 isOpening ? 'animate-chest-suspense' : chestOpened ? 'animate-treasure-pop' : ''
               }" aria-label="صندوق گنج طلایی">
@@ -381,10 +515,8 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
                 ${
                   chestOpened
                     ? `
-                    <!-- Open Ornate Lid -->
                     <path d="M44 70 C44 20 196 20 196 70 Z" fill="#b45309" stroke="#fde047" stroke-width="4.5"/>
                     <path d="M54 66 C58 32 182 32 186 66 Z" fill="#78350f"/>
-                    <!-- Royal Crown & Bursting Treasure Pile -->
                     <polygon points="100,48 106,30 115,41 120,25 125,41 134,30 140,48" fill="#fde047" stroke="#92400e" stroke-width="2"/>
                     <circle cx="120" cy="40" r="3" fill="#f43f5e"/>
                     <circle cx="80" cy="74" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
@@ -398,13 +530,11 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
                     <polygon points="156,56 162,64 156,72 150,64" fill="#a78bfa" stroke="#ede9fe" stroke-width="1.8"/>
                   `
                     : `
-                    <!-- Closed Ornate Lid -->
                     <path d="M44 82 C44 40 196 40 196 82 Z" fill="#92400e" stroke="#fbbf24" stroke-width="4.5"/>
                     <path d="M72 48 L72 82 M168 48 L168 82" stroke="#fbbf24" stroke-width="9"/>
                   `
                 }
 
-                <!-- Chest Base -->
                 <rect x="44" y="80" width="152" height="62" rx="10" fill="#78350f" stroke="#fbbf24" stroke-width="4.5"/>
                 <rect x="68" y="80" width="14" height="62" fill="#f59e0b"/>
                 <rect x="158" y="80" width="14" height="62" fill="#f59e0b"/>
@@ -430,6 +560,8 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
                       ? '✨ در حال گشودن قفل افسانه‌ای...'
                       : bothPlaced
                       ? '🗝️ باز کردن گنج افسانه‌ای!'
+                      : isLanternsWorld
+                      ? 'ابتدا هر دو فانوس خورشید و ماه را روشن کنید'
                       : 'ابتدا هر دو نشان خورشید و ماه را قرار دهید'
                   }
                 </button>
@@ -448,11 +580,13 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
                     </div>
                     <div class="p-2.5 sm:p-3 rounded-xl bg-slate-800/90 border border-amber-400/40">
                       <div class="text-[11px] sm:text-xs text-slate-400">ستاره‌ها</div>
-                      <div class="text-lg sm:text-2xl font-extrabold text-amber-300 mt-0.5">${toPersianDigits(totalStars)}/${toPersianDigits(36)} ★</div>
+                      <div class="text-lg sm:text-2xl font-extrabold text-amber-300 mt-0.5">${toPersianDigits(totalStars)}/${toPersianDigits(world.maxStars)} ★</div>
                     </div>
                     <div class="p-2.5 sm:p-3 rounded-xl bg-slate-800/90 border border-cyan-400/40">
-                      <div class="text-[11px] sm:text-xs text-slate-400">صندوق‌های مخفی</div>
-                      <div class="text-lg sm:text-2xl font-extrabold text-cyan-300 mt-0.5">${toPersianDigits(decoyCount)} از ${toPersianDigits(2)}</div>
+                      <div class="text-[11px] sm:text-xs text-slate-400">${isLanternsWorld ? 'امتیاز تجربه' : 'صندوق‌های مخفی'}</div>
+                      <div class="text-lg sm:text-2xl font-extrabold text-cyan-300 mt-0.5">
+                        ${isLanternsWorld ? toPersianDigits(ws.xp || 0) : `${toPersianDigits(decoyCount)} از ${toPersianDigits(2)}`}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -461,20 +595,9 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
           </div>
         </div>
 
-        <!-- Happy Arad & Nika -->
-        <div class="mt-4 sm:mt-5 flex items-center justify-center gap-3 sm:gap-4">
-          <div class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 animate-float">${renderCharacterAvatarSvg('arad', 'excited')}</div>
-          <div class="text-xs sm:text-sm font-bold text-amber-200 bg-slate-800/85 px-3.5 py-2.5 rounded-xl border border-amber-400/35 text-right sm:text-center">
-            ${
-              chestOpened
-                ? 'آراد و نیکا: «هورا! گنج دو جهان گشوده شد و افسانه‌مان جاودانه ماند!»'
-                : bothPlaced
-                ? 'آراد و نیکا: «دروازه باز شد! حالا وقت باز کردن صندوق گنج است!»'
-                : 'آراد و نیکا: «نشان‌های خورشید و ماه را روی پایه‌ها بگذاریم!»'
-            }
-          </div>
-          <div class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 animate-float" style="animation-delay:0.4s">${renderCharacterAvatarSvg('nika', 'excited')}</div>
-        </div>
+        ${lanternsTreasuresHtml}
+        ${nextWorldUnlockHtml}
+        ${companionsHtml}
 
         <div class="mt-5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
           ${
@@ -528,6 +651,12 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
       }, 650);
     });
 
+    contentHost.querySelector('#enter-next-world-btn')?.addEventListener('click', () => {
+      if (!nextWorld) return;
+      audio.playClick();
+      onEnterNextWorld?.(nextWorld.id);
+    });
+
     contentHost.querySelector('#victory-fireworks-replay')?.addEventListener('click', () => {
       audio.playGrandTreasureFanfare?.();
       triggerGrandCelebrationVolley();
@@ -553,7 +682,6 @@ export function renderFinalTempleScene(container, { state, audio, onCompleteCere
     triggerGrandCelebrationVolley();
   }
 
-  // Gentle periodic celebration rockets once opened
   autoVolleyTimer = setInterval(() => {
     if (!chestOpened || reducedMotion) return;
     const w = window.innerWidth;

@@ -161,6 +161,19 @@
   animation: treasurePopBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+@keyframes splashKenBurns {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-splash-kenburns {
+  animation: splashKenBurns 6s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
   .animate-cloud,
@@ -168,7 +181,8 @@
   .route-path-active,
   .stage-node--active,
   .animate-sun-rays,
-  .animate-chest-suspense {
+  .animate-chest-suspense,
+  .animate-splash-kenburns {
     animation: none !important;
   }
 }

@@ -1,7 +1,6 @@
-import { MAP_VIEWBOX, ROUTE_SEGMENTS } from './routes.js';
-import { MAP_HOTSPOTS, PERSIAN_MAP_PLAQUES } from './hotspots.js';
+import { getWorldConfig } from '../data/worlds.js';
 import { getStage } from '../data/stages.js';
-import { DECOY_CHESTS, renderCharacterAvatarSvg } from '../data/story.js';
+import { getDecoyChestsForWorld, renderCharacterAvatarSvg } from '../data/story.js';
 import { UI_TEXT, toPersianDigits } from '../data/translations.js';
 import {
   isStageCompleted,
@@ -10,6 +9,7 @@ import {
   getRouteProgressCount,
   getTotalCompletedStages,
   getNextRecommendedStage,
+  getWorldState,
 } from '../core/game-state.js';
 import { renderMapTopBar, renderKeyIconSvg } from '../components/progress-bar.js';
 import { showModal } from '../components/modal.js';
@@ -31,17 +31,29 @@ export function renderMapView(
     onDiscoverDecoy,
     onOpenFinalTemple,
     onBackHome,
+    onOpenWorlds,
     onToggleSound,
     onOpenGuide,
     onOpenSettings,
   }
 ) {
+  const world = getWorldConfig(state.activeWorldId);
+  const ws = getWorldState(state, world.id);
+  const mapViewbox = world.viewbox;
+  const mapHotspots = world.hotspots;
+  const routeSegments = world.routeSegments;
+  const decoyChests = getDecoyChestsForWorld(world.id);
+  const isLanternsWorld = world.id === 'two-lanterns';
+
   const shell = document.createElement('div');
   shell.className = 'map-shell';
+  shell.dataset.worldId = world.id;
 
   const topBar = renderMapTopBar({
     state,
+    worldConfig: world,
     onHome: onBackHome,
+    onOpenWorlds,
     onToggleSound,
     onOpenGuide,
     onOpenSettings,
@@ -50,13 +62,13 @@ export function renderMapView(
 
   const stageViewport = document.createElement('main');
   stageViewport.className = 'map-stage-viewport';
-  stageViewport.setAttribute('aria-label', 'نقشه ماجراجویی دو جهان');
+  stageViewport.setAttribute('aria-label', `نقشه ${world.title}`);
 
   const zoomShell = document.createElement('div');
   zoomShell.className = 'map-zoom-shell';
   zoomShell.dataset.testid = 'map-zoom-shell';
 
-  // Mobile Fullscreen Header (shown only when isFullscreen is active on mobile)
+  // Mobile Fullscreen Header
   const fullscreenHeader = document.createElement('div');
   fullscreenHeader.className =
     'hidden items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-900/95 border border-amber-400/30 text-slate-100 shrink-0';
@@ -86,36 +98,41 @@ export function renderMapView(
   board.className = 'map-board';
   board.dataset.testid = 'adventure-map-board';
 
-  // 1. Original Map Artwork (unstretched 1672:941)
+  // 1. World Map Artwork (1672:941)
   const img = document.createElement('img');
-  img.src = '/images/adventure-map.png';
-  img.alt = 'نقشه گنج دو جهان — مسیر روز و مسیر شب';
+  img.src = world.mapImage;
+  img.alt = `${world.title} — ${UI_TEXT.daytimeRoute} و ${UI_TEXT.nighttimeRoute}`;
   img.className = 'map-artwork';
   img.draggable = false;
   board.appendChild(img);
 
-  // 2. Ambient Animation Layer (clouds on day sky, twinkling stars on night sky, waterfall shimmer)
+  // 2. Ambient Animation Layer
   const ambient = document.createElement('div');
   ambient.className = 'map-ambient-layer';
-  ambient.innerHTML = `
-    <!-- Daytime drifting clouds -->
-    <div class="animate-cloud absolute top-[4%] left-[6%] w-[14%] h-[6%] rounded-full bg-white/30 blur-md"></div>
-    <div class="animate-cloud absolute top-[9%] left-[22%] w-[10%] h-[4%] rounded-full bg-amber-100/25 blur-sm" style="animation-delay:-7s"></div>
-    <!-- Nighttime twinkling stars -->
-    <span class="animate-twinkle absolute top-[5%] right-[16%] w-2 h-2 rounded-full bg-cyan-200"></span>
-    <span class="animate-twinkle absolute top-[11%] right-[24%] w-1.5 h-1.5 rounded-full bg-white" style="animation-delay:0.9s"></span>
-    <span class="animate-twinkle absolute top-[7%] right-[9%] w-2 h-2 rounded-full bg-sky-300" style="animation-delay:1.6s"></span>
-    <span class="animate-twinkle absolute top-[18%] right-[18%] w-1.5 h-1.5 rounded-full bg-cyan-100" style="animation-delay:2.1s"></span>
-    <!-- Waterfall sparkle -->
-    <span class="animate-twinkle absolute top-[38%] left-[52%] w-2 h-2 rounded-full bg-sky-100/80" style="animation-delay:0.4s"></span>
-    <span class="animate-twinkle absolute top-[47%] left-[56%] w-2 h-2 rounded-full bg-cyan-200/80" style="animation-delay:1.2s"></span>
-  `;
+  ambient.innerHTML = isLanternsWorld
+    ? `
+      <div class="animate-cloud absolute top-[5%] left-[14%] w-[12%] h-[5%] rounded-full bg-white/25 blur-md"></div>
+      <span class="animate-twinkle absolute top-[6%] right-[22%] w-2 h-2 rounded-full bg-cyan-200"></span>
+      <span class="animate-twinkle absolute top-[12%] right-[31%] w-1.5 h-1.5 rounded-full bg-white" style="animation-delay:0.8s"></span>
+      <span class="animate-twinkle absolute top-[16%] left-[48%] w-2 h-2 rounded-full bg-amber-200" style="animation-delay:0.5s"></span>
+      <span class="animate-twinkle absolute top-[35%] left-[44%] w-2 h-2 rounded-full bg-sky-200/80" style="animation-delay:1.3s"></span>
+    `
+    : `
+      <div class="animate-cloud absolute top-[4%] left-[6%] w-[14%] h-[6%] rounded-full bg-white/30 blur-md"></div>
+      <div class="animate-cloud absolute top-[9%] left-[22%] w-[10%] h-[4%] rounded-full bg-amber-100/25 blur-sm" style="animation-delay:-7s"></div>
+      <span class="animate-twinkle absolute top-[5%] right-[16%] w-2 h-2 rounded-full bg-cyan-200"></span>
+      <span class="animate-twinkle absolute top-[11%] right-[24%] w-1.5 h-1.5 rounded-full bg-white" style="animation-delay:0.9s"></span>
+      <span class="animate-twinkle absolute top-[7%] right-[9%] w-2 h-2 rounded-full bg-sky-300" style="animation-delay:1.6s"></span>
+      <span class="animate-twinkle absolute top-[18%] right-[18%] w-1.5 h-1.5 rounded-full bg-cyan-100" style="animation-delay:2.1s"></span>
+      <span class="animate-twinkle absolute top-[38%] left-[52%] w-2 h-2 rounded-full bg-sky-100/80" style="animation-delay:0.4s"></span>
+      <span class="animate-twinkle absolute top-[47%] left-[56%] w-2 h-2 rounded-full bg-cyan-200/80" style="animation-delay:1.2s"></span>
+    `;
   board.appendChild(ambient);
 
   // 3. SVG Overlay for independent Daytime & Nighttime routes
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`);
+  svg.setAttribute('viewBox', `0 0 ${mapViewbox.width} ${mapViewbox.height}`);
   svg.setAttribute('class', 'map-svg-overlay');
   svg.setAttribute('aria-hidden', 'true');
 
@@ -123,21 +140,20 @@ export function renderMapView(
     const strokeColor = route === 'daytime' ? '#fb923c' : '#22d3ee';
     const glowColor = route === 'daytime' ? '#facc15' : '#a5f3fc';
 
-    ROUTE_SEGMENTS[route].forEach((seg) => {
+    routeSegments[route].forEach((seg) => {
       let segStatus = 'locked';
       if (seg.to === 'final') {
-        segStatus = isStageCompleted(state, route, 6)
-          ? isFinalUnlocked(state)
+        segStatus = isStageCompleted(state, route, 6, world.id)
+          ? isFinalUnlocked(state, world.id)
             ? 'completed'
             : 'active'
           : 'locked';
-      } else if (isStageCompleted(state, route, seg.to)) {
+      } else if (isStageCompleted(state, route, seg.to, world.id)) {
         segStatus = 'completed';
-      } else if (isStageUnlocked(state, route, seg.to)) {
+      } else if (isStageUnlocked(state, route, seg.to, world.id)) {
         segStatus = 'active';
       }
 
-      // Outer glow for active or completed path
       if (segStatus !== 'locked') {
         const glowPath = document.createElementNS(svgNS, 'path');
         glowPath.setAttribute('d', seg.d);
@@ -160,43 +176,46 @@ export function renderMapView(
 
   board.appendChild(svg);
 
-  // 4. Persian Plaques over English labels (hidden on mobile via CSS)
-  PERSIAN_MAP_PLAQUES.forEach((plaque) => {
-    const el = document.createElement('div');
-    el.className = `persian-map-plaque plaque--${plaque.variant}`;
-    el.style.left = `${plaque.x}%`;
-    el.style.top = `${plaque.y}%`;
-    el.innerText = plaque.text;
-    board.appendChild(el);
-  });
+  // 4. Persian Plaques (only when artwork doesn't have built-in Persian labels)
+  if (!world.hasBuiltInPersianLabels && Array.isArray(world.plaques)) {
+    world.plaques.forEach((plaque) => {
+      const el = document.createElement('div');
+      el.className = `persian-map-plaque plaque--${plaque.variant}`;
+      el.style.left = `${plaque.x}%`;
+      el.style.top = `${plaque.y}%`;
+      el.innerText = plaque.text;
+      board.appendChild(el);
+    });
+  }
 
   // 5. Interactive Hotspots Layer
   const hotspotsLayer = document.createElement('div');
   hotspotsLayer.className = 'map-hotspots-layer';
 
-  // Companion Avatar Marker (Arad & Nika)
-  const nextRec = getNextRecommendedStage(state);
-  let compPos = { x: MAP_HOTSPOTS.start.x, y: MAP_HOTSPOTS.start.y - 4 };
+  // Companion Avatar Marker (Arad + Nika on World 1, Selected Hero + Pico on World 2)
+  const nextRec = getNextRecommendedStage(state, null, world.id);
+  let compPos = { x: mapHotspots.start.x, y: mapHotspots.start.y - 4 };
   if (nextRec) {
-    const hs = MAP_HOTSPOTS.stages[nextRec.route].find((s) => s.number === nextRec.number);
+    const hs = mapHotspots.stages[nextRec.route].find((s) => s.number === nextRec.number);
     if (hs) compPos = { x: hs.x, y: hs.y };
-  } else if (isFinalUnlocked(state)) {
-    compPos = { x: MAP_HOTSPOTS.final.x, y: MAP_HOTSPOTS.final.y + 4 };
+  } else if (isFinalUnlocked(state, world.id)) {
+    compPos = { x: mapHotspots.final.x, y: mapHotspots.final.y + 4 };
   }
+
+  const companionPair = isLanternsWorld ? [state.selectedHero || 'arad', 'pico'] : ['arad', 'nika'];
 
   const companion = document.createElement('div');
   companion.className = 'map-companion-marker flex items-center justify-center';
   companion.innerHTML = `
     <div class="flex -space-x-2 rtl:space-x-reverse">
-      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-full ring-2 ring-amber-300 bg-slate-900 overflow-hidden">${renderCharacterAvatarSvg('arad', 'happy')}</div>
-      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-full ring-2 ring-violet-300 bg-slate-900 overflow-hidden">${renderCharacterAvatarSvg('nika', 'happy')}</div>
+      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-full ring-2 ring-amber-300 bg-slate-900 overflow-hidden">${renderCharacterAvatarSvg(companionPair[0], 'happy')}</div>
+      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-full ring-2 ring-cyan-300 bg-slate-900 overflow-hidden">${renderCharacterAvatarSvg(companionPair[1], 'happy')}</div>
     </div>
   `;
   companion.style.left = `${compPos.x}%`;
   companion.style.top = `${compPos.y}%`;
   hotspotsLayer.appendChild(companion);
 
-  // Shared Stage, Decoy, and Final Temple handlers
   function handleStageSelect(stageMeta, unlocked, nodePos) {
     if (!unlocked) {
       audio.playError();
@@ -221,9 +240,14 @@ export function renderMapView(
   }
 
   function handleDecoySelect(route) {
-    const decoyMeta = DECOY_CHESTS[route];
+    const decoyMeta = decoyChests[route];
     audio.playMechanism();
     onDiscoverDecoy(route);
+
+    const secondSpeakerId = decoyMeta.picoLine ? 'pico' : 'nika';
+    const secondSpeakerName = decoyMeta.picoLine ? 'پیکو' : 'نیکا';
+    const secondLine = decoyMeta.picoLine || decoyMeta.nikaLine;
+
     showModal({
       title: UI_TEXT.decoyTitle,
       bodyHtml: `
@@ -236,8 +260,8 @@ export function renderMapView(
             <p class="m-0 text-slate-200"><strong>آراد:</strong> «${decoyMeta.aradLine}»</p>
           </div>
           <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 shrink-0">${renderCharacterAvatarSvg('nika', 'happy')}</div>
-            <p class="m-0 text-slate-200"><strong>نیکا:</strong> «${decoyMeta.nikaLine}»</p>
+            <div class="w-10 h-10 shrink-0">${renderCharacterAvatarSvg(secondSpeakerId, 'happy')}</div>
+            <p class="m-0 text-slate-200"><strong>${secondSpeakerName}:</strong> «${secondLine}»</p>
           </div>
         </div>
       `,
@@ -245,8 +269,8 @@ export function renderMapView(
     });
   }
 
-  const finalUnlocked = isFinalUnlocked(state);
-  const completedCount = getTotalCompletedStages(state);
+  const finalUnlocked = isFinalUnlocked(state, world.id);
+  const completedCount = getTotalCompletedStages(state, world.id);
 
   function handleFinalTempleSelect() {
     if (!finalUnlocked) {
@@ -269,11 +293,11 @@ export function renderMapView(
 
   // Stage Nodes (6 Daytime + 6 Nighttime)
   ['daytime', 'nighttime'].forEach((route) => {
-    MAP_HOTSPOTS.stages[route].forEach((node) => {
-      const stageMeta = getStage(route, node.number);
-      const completed = isStageCompleted(state, route, node.number);
-      const unlocked = isStageUnlocked(state, route, node.number);
-      const stars = state.stars[stageMeta.id] || 0;
+    mapHotspots.stages[route].forEach((node) => {
+      const stageMeta = getStage(route, node.number, world.id);
+      const completed = isStageCompleted(state, route, node.number, world.id);
+      const unlocked = isStageUnlocked(state, route, node.number, world.id);
+      const stars = ws.stars?.[stageMeta.id] || 0;
 
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -294,9 +318,11 @@ export function renderMapView(
         ? `${UI_TEXT.stageActive}`
         : `${UI_TEXT.stageLocked}`;
 
+      const displayNumber = isLanternsWorld && route === 'nighttime' ? node.number + 6 : node.number;
+
       btn.setAttribute(
         'aria-label',
-        `${route === 'daytime' ? UI_TEXT.daytimeRoute : UI_TEXT.nighttimeRoute} - ${UI_TEXT.stagePrefix} ${toPersianDigits(node.number)}: ${stageMeta.title} (${statusLabel})`
+        `${route === 'daytime' ? UI_TEXT.daytimeRoute : UI_TEXT.nighttimeRoute} - ${UI_TEXT.stagePrefix} ${toPersianDigits(displayNumber)}: ${stageMeta.title} (${statusLabel})`
       );
 
       if (completed) {
@@ -307,7 +333,7 @@ export function renderMapView(
           </span>
         `;
       } else if (unlocked) {
-        btn.innerHTML = `<span class="tabular-nums">${toPersianDigits(node.number)}</span>`;
+        btn.innerHTML = `<span class="tabular-nums">${toPersianDigits(displayNumber)}</span>`;
       } else {
         btn.innerHTML = `<span aria-hidden="true">🔒</span>`;
       }
@@ -315,9 +341,10 @@ export function renderMapView(
       btn.addEventListener('click', () => handleStageSelect(stageMeta, unlocked, node));
       hotspotsLayer.appendChild(btn);
 
-      // Key badge indicator on Stage 2 (hidden on mobile via CSS)
+      // Key badge indicator on Stage 2
       if (node.keyMarker) {
-        const hasKey = route === 'daytime' ? state.keys.magnetic : state.keys.silver;
+        const hasKey = route === 'daytime' ? ws.keys?.magnetic : ws.keys?.silver;
+        const keyTitle = route === 'daytime' ? world.daytimeKeyName : world.nighttimeKeyName;
         const keyBadge = document.createElement('div');
         keyBadge.className =
           'map-key-marker absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold border shadow-md whitespace-nowrap';
@@ -325,21 +352,21 @@ export function renderMapView(
         keyBadge.style.top = `${node.keyMarker.y + 5.2}%`;
         if (hasKey) {
           keyBadge.className += ' bg-emerald-900/90 border-emerald-400 text-emerald-200';
-          keyBadge.textContent = route === 'daytime' ? '🗝️ کلید مغناطیسی پیدا شد' : '🗝️ کلید نقره‌ای پیدا شد';
+          keyBadge.textContent = `🗝️ ${keyTitle} پیدا شد`;
         } else {
           keyBadge.className += ' bg-amber-950/90 border-amber-400/70 text-amber-200';
-          keyBadge.textContent = route === 'daytime' ? '🗝️ کلید مغناطیسی' : '🗝️ کلید نقره‌ای';
+          keyBadge.textContent = `🗝️ ${keyTitle}`;
         }
         hotspotsLayer.appendChild(keyBadge);
       }
     });
   });
 
-  // Decoy Chests (one in Daytime, one in Nighttime)
+  // Decoy Chests
   ['daytime', 'nighttime'].forEach((route) => {
-    const decoyMeta = DECOY_CHESTS[route];
-    const decoyPos = MAP_HOTSPOTS.decoys[route];
-    const found = Boolean(state.decoyDiscovered?.[route]);
+    const decoyMeta = decoyChests[route];
+    const decoyPos = mapHotspots.decoys[route];
+    const found = Boolean(ws.decoyDiscovered?.[route]);
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -360,21 +387,21 @@ export function renderMapView(
     hotspotsLayer.appendChild(btn);
   });
 
-  // Final Destination Hotspot (Mountain Peak Golden Treasure)
+  // Final Destination Hotspot
   const finalBtn = document.createElement('button');
   finalBtn.type = 'button';
   finalBtn.dataset.testid = 'final-treasure-node';
-  finalBtn.style.left = `${MAP_HOTSPOTS.final.x}%`;
-  finalBtn.style.top = `${MAP_HOTSPOTS.final.y}%`;
+  finalBtn.style.left = `${mapHotspots.final.x}%`;
+  finalBtn.style.top = `${mapHotspots.final.y}%`;
   finalBtn.className = `map-hotspot-btn map-final-btn px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-extrabold border-2 shadow-xl ${
     finalUnlocked
       ? 'btn-primary-gold'
       : 'bg-slate-900/90 border-amber-400/50 text-amber-200 hover:bg-slate-800'
   }`;
-  finalBtn.setAttribute('aria-label', `${UI_TEXT.finalDestination} (${toPersianDigits(completedCount)} از ${toPersianDigits(12)})`);
+  finalBtn.setAttribute('aria-label', `${world.finalTempleTitle} (${toPersianDigits(completedCount)} از ${toPersianDigits(12)})`);
   finalBtn.innerHTML = finalUnlocked
     ? `<span class="inline-flex items-center gap-1.5"><span class="inline-block animate-float">👑</span> ${UI_TEXT.enterFinalTemple}</span>`
-    : `<span>🔒 ${UI_TEXT.finalDestination} (${toPersianDigits(completedCount)}/${toPersianDigits(12)})</span>`;
+    : `<span>🔒 ${world.finalTempleTitle} (${toPersianDigits(completedCount)}/${toPersianDigits(12)})</span>`;
 
   finalBtn.addEventListener('click', handleFinalTempleSelect);
 
@@ -383,7 +410,7 @@ export function renderMapView(
   zoomViewport.appendChild(board);
   zoomShell.appendChild(zoomViewport);
 
-  // Mobile-Only Map Zoom & Fullscreen Toolbar (strictly hidden on md: / >= 768px)
+  // Mobile-Only Map Zoom & Fullscreen Toolbar
   const mobileZoomBar = document.createElement('div');
   mobileZoomBar.className =
     'md:hidden flex items-center justify-between gap-2 px-2.5 py-2 bg-slate-900/95 border-2 border-t-0 border-amber-400/35 rounded-b-xl text-slate-100 shrink-0';
@@ -593,7 +620,6 @@ export function renderMapView(
     setZoom(MIN_MAP_ZOOM, { animate: true });
   });
 
-  // Touch Gesture Handling: 2-finger pinch zoom, 1-finger pan when zoomed, double-tap zoom
   let pinchStartDist = 0;
   let pinchStartScale = 1;
   let panStartX = 0;
@@ -699,7 +725,6 @@ export function renderMapView(
     isTouchPanning = false;
   };
 
-  // Mouse / Pointer Drag Pan & Wheel Zoom when zoomed on mobile viewport (< 768px)
   let pointerDragging = false;
   let pointerId = null;
   let ptrStartX = 0;
@@ -786,17 +811,16 @@ export function renderMapView(
 
   applyZoomTransform(false);
 
-  // 6. Mobile-Only Route Explorer Panel (strictly hidden on md: / >= 768px desktop)
+  // 6. Mobile-Only Route Explorer Panel
   const mobileExplorer = document.createElement('section');
   mobileExplorer.className = 'md:hidden w-full flex flex-col gap-3 pb-6';
   mobileExplorer.dataset.testid = 'mobile-route-explorer';
   mobileExplorer.setAttribute('aria-label', 'فهرست مراحل مسیر روز و شب');
 
-  const dayDone = getRouteProgressCount(state, 'daytime');
-  const nightDone = getRouteProgressCount(state, 'nighttime');
+  const dayDone = getRouteProgressCount(state, 'daytime', world.id);
+  const nightDone = getRouteProgressCount(state, 'nighttime', world.id);
   const progressPct = Math.round((completedCount / 12) * 100);
 
-  // Final Temple Progress Card
   const finalCard = document.createElement('button');
   finalCard.type = 'button';
   finalCard.dataset.testid = 'mobile-final-treasure-card';
@@ -812,7 +836,7 @@ export function renderMapView(
           finalUnlocked ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-300 border border-amber-400/30'
         }">${finalUnlocked ? '👑' : '🔒'}</span>
         <div class="min-w-0">
-          <div class="font-extrabold text-sm text-amber-200 truncate">${UI_TEXT.finalDestination}</div>
+          <div class="font-extrabold text-sm text-amber-200 truncate">${world.finalTempleTitle}</div>
           <div class="text-xs text-slate-300 tabular-nums">
             ${
               finalUnlocked
@@ -837,7 +861,6 @@ export function renderMapView(
   finalCard.addEventListener('click', handleFinalTempleSelect);
   mobileExplorer.appendChild(finalCard);
 
-  // Segmented Route Tabs
   let activeMobileRoute = nextRec?.route || 'daytime';
 
   const tabsWrap = document.createElement('div');
@@ -848,7 +871,6 @@ export function renderMapView(
   routeListWrap.className = 'flex flex-col gap-2.5';
 
   function renderMobileRouteContent() {
-    // Update Tab Styling
     tabsWrap.innerHTML = '';
     [
       { id: 'daytime', icon: '☀', label: UI_TEXT.daytimeRoute, count: dayDone },
@@ -883,14 +905,12 @@ export function renderMapView(
       tabsWrap.appendChild(tabBtn);
     });
 
-    // Update Route Content List
     routeListWrap.innerHTML = '';
     const isDay = activeMobileRoute === 'daytime';
     const keyType = isDay ? 'magnetic' : 'silver';
-    const hasRouteKey = isDay ? state.keys.magnetic : state.keys.silver;
-    const keyName = isDay ? UI_TEXT.magneticKey : UI_TEXT.silverKey;
+    const hasRouteKey = isDay ? ws.keys?.magnetic : ws.keys?.silver;
+    const keyName = isDay ? world.daytimeKeyName : world.nighttimeKeyName;
 
-    // Key Status Banner
     const keyBanner = document.createElement('div');
     keyBanner.className = `flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold ${
       hasRouteKey
@@ -908,12 +928,12 @@ export function renderMapView(
     `;
     routeListWrap.appendChild(keyBanner);
 
-    // 6 Stages for the active route
-    MAP_HOTSPOTS.stages[activeMobileRoute].forEach((node) => {
-      const stageMeta = getStage(activeMobileRoute, node.number);
-      const completed = isStageCompleted(state, activeMobileRoute, node.number);
-      const unlocked = isStageUnlocked(state, activeMobileRoute, node.number);
-      const stars = state.stars[stageMeta.id] || 0;
+    mapHotspots.stages[activeMobileRoute].forEach((node) => {
+      const stageMeta = getStage(activeMobileRoute, node.number, world.id);
+      const completed = isStageCompleted(state, activeMobileRoute, node.number, world.id);
+      const unlocked = isStageUnlocked(state, activeMobileRoute, node.number, world.id);
+      const stars = ws.stars?.[stageMeta.id] || 0;
+      const displayNum = isLanternsWorld && activeMobileRoute === 'nighttime' ? node.number + 6 : node.number;
 
       const card = document.createElement('button');
       card.type = 'button';
@@ -938,11 +958,11 @@ export function renderMapView(
 
       let subLine = stageMeta.shortTitle;
       if (stageMeta.requiresKey) {
-        const reqHasKey = stageMeta.requiresKey === 'magnetic' ? state.keys.magnetic : state.keys.silver;
-        const reqKeyName = stageMeta.requiresKey === 'magnetic' ? UI_TEXT.magneticKey : UI_TEXT.silverKey;
+        const reqHasKey = stageMeta.requiresKey === 'magnetic' ? ws.keys?.magnetic : ws.keys?.silver;
+        const reqKeyName = stageMeta.requiresKey === 'magnetic' ? world.daytimeKeyName : world.nighttimeKeyName;
         subLine = reqHasKey ? `🗝️ ${reqKeyName} آماده است` : `🗝️ نیازمند ${reqKeyName}`;
       } else if (stageMeta.grantsKey) {
-        subLine = `🗝️ شامل ${stageMeta.grantsKey === 'magnetic' ? UI_TEXT.magneticKey : UI_TEXT.silverKey}`;
+        subLine = `🗝️ شامل ${stageMeta.grantsKey === 'magnetic' ? world.daytimeKeyName : world.nighttimeKeyName}`;
       }
 
       const rightBadge = completed
@@ -959,10 +979,10 @@ export function renderMapView(
       card.innerHTML = `
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center font-extrabold text-sm shrink-0 tabular-nums ${badgeClass}">
-            ${completed ? '✓' : unlocked ? toPersianDigits(node.number) : '🔒'}
+            ${completed ? '✓' : unlocked ? toPersianDigits(displayNum) : '🔒'}
           </div>
           <div class="min-w-0">
-            <div class="font-extrabold text-sm truncate">${UI_TEXT.stagePrefix} ${toPersianDigits(node.number)}: ${stageMeta.title}</div>
+            <div class="font-extrabold text-sm truncate">${UI_TEXT.stagePrefix} ${toPersianDigits(displayNum)}: ${stageMeta.title}</div>
             <div class="text-xs ${unlocked && !completed ? 'text-amber-200/90' : 'text-slate-400'} truncate">${subLine}</div>
           </div>
         </div>
@@ -973,9 +993,8 @@ export function renderMapView(
       routeListWrap.appendChild(card);
     });
 
-    // Decoy Chest Card for active route
-    const decoyMeta = DECOY_CHESTS[activeMobileRoute];
-    const decoyFound = Boolean(state.decoyDiscovered?.[activeMobileRoute]);
+    const decoyMeta = decoyChests[activeMobileRoute];
+    const decoyFound = Boolean(ws.decoyDiscovered?.[activeMobileRoute]);
     const decoyCard = document.createElement('button');
     decoyCard.type = 'button';
     decoyCard.dataset.testid = `mobile-decoy-card-${activeMobileRoute}`;

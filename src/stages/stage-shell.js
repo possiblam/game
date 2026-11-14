@@ -1,4 +1,5 @@
 import { UI_TEXT, toPersianDigits } from '../data/translations.js';
+import { getWorldConfig } from '../data/worlds.js';
 import { HintSystem } from '../components/hint-system.js';
 import { renderKeyIconSvg } from '../components/progress-bar.js';
 import { calculateStars } from '../core/game-state.js';
@@ -8,10 +9,13 @@ export function createStageShell(
   { stage, state, audio, onBackToMap, onCompleteStage, onToggleSound }
 ) {
   let attempts = 1;
-  let startTime = Date.now();
+  const startTime = Date.now();
   let hintLevel = 0;
   let finished = false;
   const cleanups = [];
+
+  const world = getWorldConfig(stage.worldId || state.activeWorldId || 'two-worlds');
+  const guideCharacterId = world.guideCharacterId || 'nika';
 
   const shell = document.createElement('div');
   shell.className = `stage-shell stage-shell--${stage.route}`;
@@ -40,10 +44,10 @@ export function createStageShell(
 
       <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-bold">
         <span class="text-slate-400">${UI_TEXT.toolkitLabel}:</span>
-        <span class="inline-flex items-center gap-1 ${state.keys.magnetic ? 'text-amber-300' : 'text-slate-500'}" id="toolbar-key-magnetic">
+        <span class="inline-flex items-center gap-1 ${state.keys.magnetic ? 'text-amber-300' : 'text-slate-500'}" id="toolbar-key-magnetic" title="${world.daytimeKeyName}">
           ${renderKeyIconSvg('magnetic', state.keys.magnetic)}
         </span>
-        <span class="inline-flex items-center gap-1 ${state.keys.silver ? 'text-cyan-200' : 'text-slate-500'}" id="toolbar-key-silver">
+        <span class="inline-flex items-center gap-1 ${state.keys.silver ? 'text-cyan-200' : 'text-slate-500'}" id="toolbar-key-silver" title="${world.nighttimeKeyName}">
           ${renderKeyIconSvg('silver', state.keys.silver)}
         </span>
       </div>
@@ -72,10 +76,14 @@ export function createStageShell(
   let hintChangeHandler = null;
   let retryHandler = null;
 
-  const hintSystem = new HintSystem(stage, (newLevel) => {
-    hintLevel = newLevel;
-    hintChangeHandler?.(newLevel);
-  });
+  const hintSystem = new HintSystem(
+    stage,
+    (newLevel) => {
+      hintLevel = newLevel;
+      hintChangeHandler?.(newLevel);
+    },
+    guideCharacterId
+  );
 
   toolbar.querySelector('[data-action="back"]').addEventListener('click', () => {
     audio.playClick();
@@ -154,6 +162,8 @@ export function createStageShell(
         hintsUsed: hintLevel,
         elapsedSeconds,
         grantedKey,
+        xpReward: stage.xpReward || 120,
+        skillBadge: stage.skillBadge || null,
       });
     },
     destroy() {

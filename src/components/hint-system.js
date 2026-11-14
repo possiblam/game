@@ -1,11 +1,13 @@
-import { renderCharacterAvatarSvg } from '../data/story.js';
-import { UI_TEXT, toPersianDigits } from '../data/translations.js';
+import { CHARACTERS, renderCharacterAvatarSvg } from '../data/story.js';
+import { toPersianDigits } from '../data/translations.js';
 import { showModal } from './modal.js';
 
 export class HintSystem {
-  constructor(stageMeta, onHintLevelChange) {
+  constructor(stageMeta, onHintLevelChange, guideCharacterId = null) {
     this.stageMeta = stageMeta;
     this.onHintLevelChange = onHintLevelChange;
+    this.guideCharacterId =
+      guideCharacterId || (stageMeta?.worldId === 'two-lanterns' ? 'pico' : 'nika');
     this.level = 0; // 0 = unused, 1..3 = tier
   }
 
@@ -23,6 +25,9 @@ export class HintSystem {
       this.level += 1;
       this.onHintLevelChange?.(this.level);
     }
+
+    const guide = CHARACTERS[this.guideCharacterId] || CHARACTERS.nika;
+    const isPico = guide.id === 'pico';
 
     const tierNames = [
       '',
@@ -55,12 +60,16 @@ export class HintSystem {
     ];
 
     showModal({
-      title: `نیکا راهنمایی می‌کند (${toPersianDigits(this.level)} از ${toPersianDigits(3)})`,
+      title: `${guide.name} راهنمایی می‌کند (${toPersianDigits(this.level)} از ${toPersianDigits(3)})`,
       bodyHtml: `
         <div class="flex items-start gap-3 mb-4">
-          <div class="w-14 h-14 shrink-0">${renderCharacterAvatarSvg('nika', 'happy')}</div>
+          <div class="w-14 h-14 shrink-0">${renderCharacterAvatarSvg(guide.id, 'happy')}</div>
           <div class="text-sm text-slate-200 leading-relaxed">
-            نگران نباش! با هم قدم‌به‌قدم حلش می‌کنیم. هر بار که کمک بخواهی یک سرنخ دقیق‌تر می‌دهم.
+            ${
+              isPico
+                ? 'بیپ-بوپ! نگران نباش، من پیکو کنارت هستم تا قدم‌به‌قدم راز این دستگاه را کشف کنی!'
+                : 'نگران نباش! با هم قدم‌به‌قدم حلش می‌کنیم. هر بار که کمک بخواهی یک سرنخ دقیق‌تر می‌دهم.'
+            }
           </div>
         </div>
         <div class="space-y-2.5">${hintsHtml}</div>
