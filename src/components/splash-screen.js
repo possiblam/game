@@ -1,7 +1,7 @@
 import { toPersianDigits } from '../data/translations.js';
-import { WORLDS, getWorldConfig } from '../data/worlds.js';
+import { getWorldConfig } from '../data/worlds.js';
 
-export const SPLASH_ARTWORK_URL = '/assets/aistudio/Quest_Beyond_the_Three_Realms_ffb24094.png';
+export const SPLASH_ARTWORK_URL = '/assets/aistudio/Quest_Beyond_the_Three_Realms__2__1bb3b7b2.webp';
 
 const MIN_SPLASH_DURATION_MS = 2300;
 const FADE_OUT_MS = 380;
@@ -46,6 +46,9 @@ export function renderSplashScreen(mountEl, { state, onFinish }) {
         src="${SPLASH_ARTWORK_URL}"
         alt="تصویر معرفی بازی راز گنج دو جهان"
         data-testid="splash-artwork-desktop"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
         class="w-full h-full object-cover object-center animate-splash-kenburns"
       />
       <div class="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-transparent to-slate-950/88"></div>
@@ -93,6 +96,9 @@ export function renderSplashScreen(mountEl, { state, onFinish }) {
             src="${SPLASH_ARTWORK_URL}"
             alt="تصویر معرفی بازی راز گنج دو جهان"
             data-testid="splash-artwork-mobile"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
             class="w-full aspect-video object-cover object-center block"
           />
           <div class="absolute inset-0 ring-1 ring-inset ring-white/15 rounded-3xl pointer-events-none"></div>
@@ -162,15 +168,11 @@ export function renderSplashScreen(mountEl, { state, onFinish }) {
 
   const startTime = performance.now();
 
-  const assetsToPreload = [
-    SPLASH_ARTWORK_URL,
-    activeWorld.mapImage,
-    ...WORLDS.map((w) => w.mapImage),
-  ];
-
-  Promise.all([...new Set(assetsToPreload)].map(preloadImage)).then(() => {
+  // Only gate completion on the fast WebP splash artwork; preload active world map silently in the background
+  preloadImage(SPLASH_ARTWORK_URL).then(() => {
     assetsReady = true;
   });
+  preloadImage(activeWorld.mapImage);
 
   function updateProgress(pct) {
     const clamped = Math.max(0, Math.min(100, Math.round(pct)));
