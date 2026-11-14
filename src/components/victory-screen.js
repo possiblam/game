@@ -135,7 +135,9 @@ export function renderFinalTempleScene(
   const world = worldConfig || getWorldConfig(state.activeWorldId);
   const ws = getWorldState(state, world.id);
   const finalStory = getFinalStoryForWorld(world.id);
-  const isLanternsWorld = world.id === 'two-lanterns';
+  const theme = world.victoryTheme || world.id;
+  const isLanternsWorld = theme === 'two-lanterns';
+  const isChronosWorld = theme === 'chronos';
 
   let sunPlaced = false;
   let moonPlaced = false;
@@ -154,6 +156,12 @@ export function renderFinalTempleScene(
       : totalStars >= 24
       ? 'کاوشگر ارشد علم و نور'
       : 'نگهبان جدید جزیره دو فانوس'
+    : isChronosWorld
+    ? totalStars >= 32
+      ? 'نگهبان تعادل کرونوس'
+      : totalStars >= 24
+      ? 'استاد دو نیمه‌ی زمان'
+      : 'کاوشگر پیروز کرونوس'
     : totalStars >= 32
     ? 'اسطوره طلایی دو جهان'
     : totalStars >= 24
@@ -329,6 +337,10 @@ export function renderFinalTempleScene(
       ? sunPlaced
         ? 'فانوس خورشید روشن ✓'
         : 'روشن کردن فانوس خورشید'
+      : isChronosWorld
+      ? sunPlaced
+        ? 'پرتو روز وصل شد ✓'
+        : 'وصل کردن پرتو خورشید (روز)'
       : sunPlaced
       ? 'نشان خورشید روشن ✓'
       : 'قرار دادن نشان خورشید';
@@ -336,6 +348,10 @@ export function renderFinalTempleScene(
       ? moonPlaced
         ? 'فانوس ماه روشن ✓'
         : 'روشن کردن فانوس ماه'
+      : isChronosWorld
+      ? moonPlaced
+        ? 'پرتو شب وصل شد ✓'
+        : 'وصل کردن پرتو ماه (شب)'
       : moonPlaced
       ? 'نشان ماه روشن ✓'
       : 'قرار دادن نشان ماه';
@@ -349,23 +365,23 @@ export function renderFinalTempleScene(
                 🎉 نقشه جدید «${nextWorld.title}» (${nextWorld.difficultyLabel}) باز شد!
               </div>
               <p class="text-xs text-slate-200 m-0 mt-1">
-                دو فانوس جزیره اسرارآمیز در انتظار شماست؛ همراه آراد، رها و ربات پیکو به چالش سخت‌تر بروید!
+                ${nextWorld.subtitle} — «${nextWorld.tagline}»
               </p>
             </div>
             <button type="button" id="enter-next-world-btn" data-testid="enter-next-world-btn"
               class="px-5 py-3 rounded-xl btn-primary-gold text-xs sm:text-sm whitespace-nowrap shrink-0">
-              🗺 ورود به نقشه سخت‌تر!
+              🗺 ورود به نقشه «${nextWorld.difficultyLabel}»!
             </button>
           </div>
         `
         : '';
 
     const lanternsTreasuresHtml =
-      chestOpened && isLanternsWorld && Array.isArray(finalStory.treasuresInside)
+      chestOpened && Array.isArray(finalStory.treasuresInside)
         ? `
           <div class="mt-4 p-3.5 rounded-2xl bg-slate-900/90 border border-amber-400/35 text-right">
             <div class="text-xs sm:text-sm font-extrabold text-amber-300 mb-2.5 text-center">
-              گنجینه واقعی درون معبد دو فانوس:
+              ${isChronosWorld ? 'گوهرهای تعادل درون صندوقچه کرونوس:' : 'گنجینه واقعی درون معبد دو فانوس:'}
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
               ${finalStory.treasuresInside
@@ -406,9 +422,13 @@ export function renderFinalTempleScene(
           <div class="text-xs sm:text-sm font-bold text-amber-200 bg-slate-800/85 px-3.5 py-2.5 rounded-xl border border-amber-400/35 text-right sm:text-center">
             ${
               chestOpened
-                ? 'آراد و نیکا: «هورا! گنج دو جهان گشوده شد و افسانه‌مان جاودانه ماند!»'
+                ? isChronosWorld
+                  ? 'آراد و نیکا: «هورا! صندوقچه تعادل کرونوس گشوده شد و زمان دوباره آرام گرفت!»'
+                  : 'آراد و نیکا: «هورا! گنج دو جهان گشوده شد و افسانه‌مان جاودانه ماند!»'
                 : bothPlaced
                 ? 'آراد و نیکا: «دروازه باز شد! حالا وقت باز کردن صندوق گنج است!»'
+                : isChronosWorld
+                ? 'آراد و نیکا: «پرتوهای خورشید و ماه را هم‌زمان به قله برسانیم!»'
                 : 'آراد و نیکا: «نشان‌های خورشید و ماه را روی پایه‌ها بگذاریم!»'
             }
           </div>
@@ -562,6 +582,8 @@ export function renderFinalTempleScene(
                       ? '🗝️ باز کردن گنج افسانه‌ای!'
                       : isLanternsWorld
                       ? 'ابتدا هر دو فانوس خورشید و ماه را روشن کنید'
+                      : isChronosWorld
+                      ? 'ابتدا پرتوهای روز و شب را به تعادل برسانید'
                       : 'ابتدا هر دو نشان خورشید و ماه را قرار دهید'
                   }
                 </button>
@@ -583,9 +605,9 @@ export function renderFinalTempleScene(
                       <div class="text-lg sm:text-2xl font-extrabold text-amber-300 mt-0.5">${toPersianDigits(totalStars)}/${toPersianDigits(world.maxStars)} ★</div>
                     </div>
                     <div class="p-2.5 sm:p-3 rounded-xl bg-slate-800/90 border border-cyan-400/40">
-                      <div class="text-[11px] sm:text-xs text-slate-400">${isLanternsWorld ? 'امتیاز تجربه' : 'صندوق‌های مخفی'}</div>
+                      <div class="text-[11px] sm:text-xs text-slate-400">${isLanternsWorld || isChronosWorld ? 'امتیاز تجربه' : 'صندوق‌های مخفی'}</div>
                       <div class="text-lg sm:text-2xl font-extrabold text-cyan-300 mt-0.5">
-                        ${isLanternsWorld ? toPersianDigits(ws.xp || 0) : `${toPersianDigits(decoyCount)} از ${toPersianDigits(2)}`}
+                        ${isLanternsWorld || isChronosWorld ? toPersianDigits(ws.xp || 0) : `${toPersianDigits(decoyCount)} از ${toPersianDigits(2)}`}
                       </div>
                     </div>
                   </div>

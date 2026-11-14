@@ -2,7 +2,7 @@ import { UI_TEXT, toPersianDigits } from '../data/translations.js';
 import { getWorldConfig } from '../data/worlds.js';
 import { HintSystem } from '../components/hint-system.js';
 import { renderKeyIconSvg } from '../components/progress-bar.js';
-import { calculateStars } from '../core/game-state.js';
+import { calculateStars, getWorldState } from '../core/game-state.js';
 
 export function createStageShell(
   container,
@@ -15,7 +15,9 @@ export function createStageShell(
   const cleanups = [];
 
   const world = getWorldConfig(stage.worldId || state.activeWorldId || 'two-worlds');
+  const ws = getWorldState(state, world.id);
   const guideCharacterId = world.guideCharacterId || 'nika';
+  const hasRouteKeys = world.hasRouteKeys !== false;
 
   const shell = document.createElement('div');
   shell.className = `stage-shell stage-shell--${stage.route}`;
@@ -23,6 +25,24 @@ export function createStageShell(
 
   const routeLabel = stage.route === 'daytime' ? UI_TEXT.daytimeRoute : UI_TEXT.nighttimeRoute;
   const routeColor = stage.route === 'daytime' ? 'text-orange-300' : 'text-cyan-300';
+
+  const toolkitPillHtml = hasRouteKeys
+    ? `
+      <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-bold">
+        <span class="text-slate-400">${UI_TEXT.toolkitLabel}:</span>
+        <span class="inline-flex items-center gap-1 ${ws.keys?.magnetic ? 'text-amber-300' : 'text-slate-500'}" id="toolbar-key-magnetic" title="${world.daytimeKeyName}">
+          ${renderKeyIconSvg('magnetic', ws.keys?.magnetic)}
+        </span>
+        <span class="inline-flex items-center gap-1 ${ws.keys?.silver ? 'text-cyan-200' : 'text-slate-500'}" id="toolbar-key-silver" title="${world.nighttimeKeyName}">
+          ${renderKeyIconSvg('silver', ws.keys?.silver)}
+        </span>
+      </div>
+    `
+    : `
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-emerald-400/35 text-xs font-bold text-emerald-200">
+        <span>⚖️ ${world.title}</span>
+      </div>
+    `;
 
   const toolbar = document.createElement('header');
   toolbar.className = 'stage-toolbar';
@@ -42,15 +62,7 @@ export function createStageShell(
         تلاش: <span id="stage-attempts-count">${toPersianDigits(attempts)}</span>
       </div>
 
-      <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-bold">
-        <span class="text-slate-400">${UI_TEXT.toolkitLabel}:</span>
-        <span class="inline-flex items-center gap-1 ${state.keys.magnetic ? 'text-amber-300' : 'text-slate-500'}" id="toolbar-key-magnetic" title="${world.daytimeKeyName}">
-          ${renderKeyIconSvg('magnetic', state.keys.magnetic)}
-        </span>
-        <span class="inline-flex items-center gap-1 ${state.keys.silver ? 'text-cyan-200' : 'text-slate-500'}" id="toolbar-key-silver" title="${world.nighttimeKeyName}">
-          ${renderKeyIconSvg('silver', state.keys.silver)}
-        </span>
-      </div>
+      ${toolkitPillHtml}
 
       <button type="button" data-action="hint" class="px-3.5 py-2 rounded-xl bg-violet-700 hover:bg-violet-600 text-white border border-violet-400/50 text-xs sm:text-sm font-bold whitespace-nowrap shrink-0">
         💡 ${UI_TEXT.hint}

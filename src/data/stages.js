@@ -1,4 +1,5 @@
 import { LANTERNS_STAGES } from './lanterns-stages.js';
+import { CHRONOS_STAGES } from './chronos-stages.js';
 
 export const STAGES = [
   // ================= DAYTIME ROUTE =================
@@ -225,21 +226,22 @@ export const STAGES = [
 const WORLD_ONE_STAGES = STAGES.map((s) => ({ ...s, worldId: 'two-worlds' }));
 
 export const WORLDS_STAGES = {
+  'twin-times': CHRONOS_STAGES,
   'two-worlds': WORLD_ONE_STAGES,
   'two-lanterns': LANTERNS_STAGES,
 };
 
-const ALL_STAGES = [...WORLD_ONE_STAGES, ...LANTERNS_STAGES];
+const ALL_STAGES = [...CHRONOS_STAGES, ...WORLD_ONE_STAGES, ...LANTERNS_STAGES];
 
-export function getStagesForWorld(worldId = 'two-worlds') {
-  return WORLDS_STAGES[worldId] || WORLD_ONE_STAGES;
+export function getStagesForWorld(worldId = 'twin-times') {
+  return WORLDS_STAGES[worldId] || CHRONOS_STAGES;
 }
 
 export function getStageById(stageId) {
   return ALL_STAGES.find((s) => s.id === stageId) || null;
 }
 
-export function getStage(route, number, worldId = 'two-worlds') {
+export function getStage(route, number, worldId = 'twin-times') {
   const list = getStagesForWorld(worldId);
   return list.find((s) => s.route === route && s.number === number) || null;
 }

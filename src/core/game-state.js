@@ -1,4 +1,4 @@
-import { WORLDS, DEFAULT_WORLD_ID, getWorldConfig } from '../data/worlds.js';
+import { WORLDS, DEFAULT_WORLD_ID, getWorldConfig, getStageStarKey } from '../data/worlds.js';
 
 export function createEmptyWorldProgress() {
   return {
@@ -103,8 +103,8 @@ export function normalizeGameState(raw) {
   for (const w of WORLDS) {
     if (hasWorldsObject && raw.worlds[w.id]) {
       worlds[w.id] = normalizeSingleWorld(raw.worlds[w.id]);
-    } else if (!hasWorldsObject && w.id === DEFAULT_WORLD_ID) {
-      // Auto-migrate v1 flat state cleanly into World 1 ('two-worlds')
+    } else if (!hasWorldsObject && w.id === 'two-worlds') {
+      // Auto-migrate v1 flat state cleanly into 'two-worlds'
       worlds[w.id] = normalizeSingleWorld(raw);
     } else {
       worlds[w.id] = createEmptyWorldProgress();
@@ -113,6 +113,8 @@ export function normalizeGameState(raw) {
 
   let activeWorldId = typeof raw.activeWorldId === 'string' && worlds[raw.activeWorldId]
     ? raw.activeWorldId
+    : !hasWorldsObject
+    ? 'two-worlds'
     : DEFAULT_WORLD_ID;
 
   const tempState = {
@@ -155,6 +157,15 @@ export function isWorldUnlocked(state, worldId) {
   const world = getWorldConfig(worldId);
   if (!world) return false;
   if (!world.unlockRequirementWorldId) return true;
+  // Preserve existing unlocked access if user already has saved progress in this world
+  const ownState = getWorldState(state, worldId);
+  if (
+    ownState.finalCompleted ||
+    (ownState.completedStages?.daytime?.length || 0) > 0 ||
+    (ownState.completedStages?.nighttime?.length || 0) > 0
+  ) {
+    return true;
+  }
   const reqState = getWorldState(state, world.unlockRequirementWorldId);
   return Boolean(reqState.finalCompleted);
 }
@@ -209,8 +220,11 @@ export function isStageUnlocked(state, route, stageNumber, worldId = null) {
 }
 
 export function hasRequiredKeyForStage(state, route, stageNumber, worldId = null) {
+  const targetId = worldId || state.activeWorldId || DEFAULT_WORLD_ID;
+  const world = getWorldConfig(targetId);
+  if (world.hasRouteKeys === false) return true;
   if (stageNumber !== 3) return true;
-  const ws = getWorldState(state, worldId);
+  const ws = getWorldState(state, targetId);
   if (route === 'daytime') return Boolean(ws.keys?.magnetic);
   if (route === 'nighttime') return Boolean(ws.keys?.silver);
   return true;
@@ -260,7 +274,7 @@ export function applyStageCompletion(
 ) {
   const targetId = worldId || state.activeWorldId || DEFAULT_WORLD_ID;
   const ws = getWorldState(state, targetId);
-  const starKey = targetId === 'two-worlds' ? `${route}-${stageNumber}` : `lanterns-${route}-${stageNumber}`;
+  const starKey = getStageStarKey(targetId, route, stageNumber);
 
   const currentList = ws.completedStages?.[route] || [];
   const isFirstClear = !currentList.includes(stageNumber);

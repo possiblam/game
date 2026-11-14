@@ -26,6 +26,20 @@ import { mountLanternsNightStage4 } from '../stages/lanterns/night/stage-4.js';
 import { mountLanternsNightStage5 } from '../stages/lanterns/night/stage-5.js';
 import { mountLanternsNightStage6 } from '../stages/lanterns/night/stage-6.js';
 
+import { mountChronosDayStage1 } from '../stages/chronos/day/stage-1.js';
+import { mountChronosDayStage2 } from '../stages/chronos/day/stage-2.js';
+import { mountChronosDayStage3 } from '../stages/chronos/day/stage-3.js';
+import { mountChronosDayStage4 } from '../stages/chronos/day/stage-4.js';
+import { mountChronosDayStage5 } from '../stages/chronos/day/stage-5.js';
+import { mountChronosDayStage6 } from '../stages/chronos/day/stage-6.js';
+
+import { mountChronosNightStage1 } from '../stages/chronos/night/stage-1.js';
+import { mountChronosNightStage2 } from '../stages/chronos/night/stage-2.js';
+import { mountChronosNightStage3 } from '../stages/chronos/night/stage-3.js';
+import { mountChronosNightStage4 } from '../stages/chronos/night/stage-4.js';
+import { mountChronosNightStage5 } from '../stages/chronos/night/stage-5.js';
+import { mountChronosNightStage6 } from '../stages/chronos/night/stage-6.js';
+
 const STAGE_MOUNTERS = {
   'daytime-1': mountDayStage1,
   'daytime-2': mountDayStage2,
@@ -52,6 +66,19 @@ const STAGE_MOUNTERS = {
   'lanterns-nighttime-4': mountLanternsNightStage4,
   'lanterns-nighttime-5': mountLanternsNightStage5,
   'lanterns-nighttime-6': mountLanternsNightStage6,
+
+  'chronos-daytime-1': mountChronosDayStage1,
+  'chronos-daytime-2': mountChronosDayStage2,
+  'chronos-daytime-3': mountChronosDayStage3,
+  'chronos-daytime-4': mountChronosDayStage4,
+  'chronos-daytime-5': mountChronosDayStage5,
+  'chronos-daytime-6': mountChronosDayStage6,
+  'chronos-nighttime-1': mountChronosNightStage1,
+  'chronos-nighttime-2': mountChronosNightStage2,
+  'chronos-nighttime-3': mountChronosNightStage3,
+  'chronos-nighttime-4': mountChronosNightStage4,
+  'chronos-nighttime-5': mountChronosNightStage5,
+  'chronos-nighttime-6': mountChronosNightStage6,
 };
 
 export function launchStageMiniGame(container, stageId, ctx) {

@@ -196,6 +196,27 @@
   min-width: clamp(90px, 8.2vw, 132px);
 }
 
+.map-board[data-world-id='twin-times'] .plaque--day,
+.map-board[data-world-id='twin-times'] .plaque--night {
+  padding: 6px 12px;
+  min-width: clamp(106px, 9.6vw, 152px);
+}
+
+.map-board[data-world-id='twin-times'] .plaque--wood-lg {
+  padding: 8px 28px;
+  min-width: clamp(132px, 12.2vw, 190px);
+}
+
+.map-board[data-world-id='twin-times'] .plaque--legend {
+  padding: 10px 18px;
+  min-width: clamp(150px, 14.2vw, 224px);
+}
+
+.map-board[data-world-id='twin-times'] .plaque--decoy {
+  padding: 7px 14px;
+  min-width: clamp(96px, 8.8vw, 142px);
+}
+
 .route-path-base {
   fill: none;
   stroke-linecap: round;

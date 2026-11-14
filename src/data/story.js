@@ -25,6 +25,29 @@ export const CHARACTERS = {
   },
 };
 
+export const CHRONOS_INTRO_SLIDES = [
+  {
+    speaker: 'narrator',
+    title: 'افسانه سرزمین کرونوس',
+    text: 'در سرزمین شگفت‌انگیز «کرونوس»، گنجینه‌ای باستانی به نام «صندوقچه‌ی تعادل» بر فراز قله‌ی مرکزی قرار دارد. این صندوقچه تنها زمانی گشوده می‌شود که دو کاوشگر هم‌زمان مسیر روز و مسیر شب را تا قله بپیمایند!',
+  },
+  {
+    speaker: 'arad',
+    title: 'مسیر روز؛ نور و انرژی طبیعت',
+    text: 'آراد: «در مسیر نارنجی روز با پل کریستالی صوتی، چرخ‌دنده‌های غول‌پیکر، منشور خورشیدی، پاراگلایدر روی آبفشان بخار، پاندول‌های مغناطیسی و دروازه ترازوی آبی روبه‌رو می‌شویم!»',
+  },
+  {
+    speaker: 'nika',
+    title: 'مسیر شب؛ صدا، یخ و نجوم',
+    text: 'نیکا: «و در مسیر آبی شب، نیلوفرهای درخشان، هزارتوی پژواک صوتی، سنگ‌های منشور رنگی، آبشار منجمد، پل زنگوله‌های بادی و قفل صورت‌های فلکی انتظار ما را می‌کشند!»',
+  },
+  {
+    speaker: 'both',
+    title: 'مراقب گنج تقلبی باشید!',
+    text: 'در گوشه‌ای از مرداب شب یک صندوق فریبنده چشمک می‌زند؛ طمع نکنید! هر دو مسیر را کامل کنید تا پرتو خورشید و ماه صندوقچه‌ی تعادل را باز کنند.',
+  },
+];
+
 export const INTRO_SLIDES = [
   {
     speaker: 'narrator',
@@ -71,6 +94,25 @@ export const LANTERNS_INTRO_SLIDES = [
   },
 ];
 
+export const CHRONOS_DECOY_CHESTS = {
+  daytime: {
+    id: 'chronos-decoy-day',
+    route: 'daytime',
+    title: 'گاری رهاشده در سراب بیابان',
+    noteText: 'سرعت بی‌پروا بدون تعادل، راه را گم می‌کند!',
+    aradLine: 'داخل این صندوق قدیمی فقط چند قطعه آهنی بی‌خاصیت و این پیام رمزآلود بود!',
+    nikaLine: 'یادداشت می‌گوید گنج اصلی «صندوقچه‌ی تعادل» است که فقط با کامل کردن هر دو مسیر روی قله باز می‌شود.',
+  },
+  nighttime: {
+    id: 'chronos-decoy-night',
+    route: 'nighttime',
+    title: 'گنج تقلبی حاشیه مرداب شب',
+    noteText: 'هر درخششی در مرداب، گنج نیست! طمع تو را به ابتدای مسیر برمی‌گرداند.',
+    aradLine: 'وای! نزدیک بود فریب این جواهرات قلابی را بخوریم و در آب مرداب بیفتیم!',
+    nikaLine: 'خوب شد هوشیار بودیم! مسیر اصلی از روی نیلوفرهای درخشان به قله کرونوس می‌رسد.',
+  },
+};
+
 export const DECOY_CHESTS = {
   daytime: {
     id: 'decoy-day',
@@ -109,6 +151,13 @@ export const LANTERNS_DECOY_CHESTS = {
   },
 };
 
+export const CHRONOS_FINAL_VICTORY_STORY = {
+  title: 'صندوقچه‌ی تعادل کرونوس',
+  openingText: 'آراد از مسیر طلایی روز و نیکا از مسیر نیلگون شب، هر دو هم‌زمان به فراز قله مرکزی کرونوس رسیدند.',
+  emblemText: 'پرتو طلایی خورشید از سمت چپ و پرتو نقره‌ای ماه از سمت راست روی صندوقچه‌ی تعادل می‌تابند... قفل باستانی باز می‌شود!',
+  congratulationsText: 'آفرین کاوشگران زمان! با هوش، سرعت عمل و دقت، تعادل نور و سایه را برقرار کردید و صندوقچه‌ی تعادل کرونوس را گشودید. اکنون آماده ورود به چالش سخت‌تر در کوهستان دو جهان هستید!',
+};
+
 export const FINAL_VICTORY_STORY = {
   title: 'معبد گنج دو جهان',
   openingText: 'آراد و نیکا سرانجام پس از عبور از سرزمین روشنایی و سرزمین تاریکی، به دروازه طلایی قله کوهستان رسیدند.',
@@ -132,18 +181,36 @@ export const LANTERNS_FINAL_VICTORY_STORY = {
   ],
 };
 
+export const WORLD_STORIES = {
+  'twin-times': {
+    introSlides: CHRONOS_INTRO_SLIDES,
+    decoyChests: CHRONOS_DECOY_CHESTS,
+    finalVictoryStory: CHRONOS_FINAL_VICTORY_STORY,
+  },
+  'two-worlds': {
+    introSlides: INTRO_SLIDES,
+    decoyChests: DECOY_CHESTS,
+    finalVictoryStory: FINAL_VICTORY_STORY,
+  },
+  'two-lanterns': {
+    introSlides: LANTERNS_INTRO_SLIDES,
+    decoyChests: LANTERNS_DECOY_CHESTS,
+    finalVictoryStory: LANTERNS_FINAL_VICTORY_STORY,
+  },
+};
+
 export const GUIDE_SECTIONS = [
   {
-    title: 'نقشه‌های پلکانی (سخت ← سخت‌تر)',
-    body: 'بازی دارای دو نقشه بزرگ و مستقل است: ابتدا نقشه «راز گنج دو جهان» (سخت) را فتح کنید تا دروازه نقشه پیشرفته «راز دوازده نشان؛ گنج دو فانوس» (سخت‌تر) به رویتان باز شود.',
+    title: 'نقشه‌های پلکانی (آسان ← سخت ← سخت‌تر)',
+    body: 'سفر خود را از نقشه «رازِ دو نیمه‌ی زمان» (آسان) آغاز کنید تا با فتح صندوقچه‌ی تعادل، نقشه‌های «راز گنج دو جهان» (سخت) و «گنج دو فانوس» (سخت‌تر) یکی‌یکی برایتان باز شوند.',
   },
   {
-    title: 'دو مسیر مستقل و ۱۲ آزمون',
+    title: 'دو مسیر مستقل و ۱۲ آزمون در هر نقشه',
     body: 'در هر نقشه، دو مسیر روز و شب وجود دارد که هرکدام ۶ چالش اختصاصی دارند. ترتیب انجام مسیرها آزاد است و پیشرفت هر مسیر مستقل ذخیره می‌شود.',
   },
   {
-    title: 'کلیدهای مخفی و قفل مرحله سوم',
-    body: 'در مرحله دوم هر مسیر یک کلید ویژه پنهان شده است: کلید مغناطیسی در مسیر روز و کلید نقره‌ای در مسیر شب. برای باز کردن دروازه مرحله سوم به این کلیدها نیاز دارید!',
+    title: 'کلیدهای مخفی و صندوق‌های تعادل',
+    body: 'در نقشه‌های پیشرفته، کلید مغناطیسی در مسیر روز و کلید نقره‌ای در مسیر شب برای گشودن دروازه مرحله سوم لازم است؛ در حالی که در کرونوس هر دو مسیر مستقیماً تا صندوقچه تعادل ادامه دارند.',
   },
   {
     title: 'صندوق‌های تقلبی، ستاره‌ها و راهنمایی',
@@ -151,16 +218,20 @@ export const GUIDE_SECTIONS = [
   },
 ];
 
+export function getWorldStory(worldId) {
+  return WORLD_STORIES[worldId] || WORLD_STORIES['twin-times'];
+}
+
 export function getIntroSlidesForWorld(worldId) {
-  return worldId === 'two-lanterns' ? LANTERNS_INTRO_SLIDES : INTRO_SLIDES;
+  return getWorldStory(worldId).introSlides;
 }
 
 export function getDecoyChestsForWorld(worldId) {
-  return worldId === 'two-lanterns' ? LANTERNS_DECOY_CHESTS : DECOY_CHESTS;
+  return getWorldStory(worldId).decoyChests;
 }
 
 export function getFinalStoryForWorld(worldId) {
-  return worldId === 'two-lanterns' ? LANTERNS_FINAL_VICTORY_STORY : FINAL_VICTORY_STORY;
+  return getWorldStory(worldId).finalVictoryStory;
 }
 
 export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
@@ -200,7 +271,6 @@ export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
         <path d="M16 30 C16 14 48 14 48 30 C44 20 20 20 16 30 Z" fill="#1e1b4b"/>
         <path d="M15 26 C13 34 15 41 19 44" stroke="#1e1b4b" stroke-width="5" stroke-linecap="round"/>
         <path d="M49 26 C51 34 49 41 45 44" stroke="#1e1b4b" stroke-width="5" stroke-linecap="round"/>
-        <!-- Star Hairpin -->
         <polygon points="44,18 46,21 49,21 47,23 48,26 44,24 41,26 42,23 40,21 43,21" fill="#fde047"/>
         <circle cx="26.5" cy="30" r="2.2" fill="#0f172a"/>
         <circle cx="37.5" cy="30" r="2.2" fill="#0f172a"/>
@@ -220,10 +290,8 @@ export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
     return `
       <svg viewBox="0 0 64 64" class="w-full h-full" aria-hidden="true">
         <circle cx="32" cy="32" r="30" fill="#0f172a" stroke="#fbbf24" stroke-width="3"/>
-        <!-- Antenna -->
         <line x1="32" y1="16" x2="32" y2="9" stroke="#94a3b8" stroke-width="2.5"/>
         <circle cx="32" cy="8" r="3.5" fill="#fde047"/>
-        <!-- Floating Robot Head -->
         <rect x="16" y="17" width="32" height="26" rx="10" fill="#e2e8f0" stroke="#38bdf8" stroke-width="2.5"/>
         <rect x="20" y="21" width="24" height="17" rx="6" fill="#0f172a"/>
         <circle cx="26" cy="28" r="2.8" fill="#22d3ee"/>
@@ -231,7 +299,6 @@ export function renderCharacterAvatarSvg(characterId, mood = 'happy') {
         <circle cx="27" cy="27" r="1" fill="#ffffff"/>
         <circle cx="39" cy="27" r="1" fill="#ffffff"/>
         ${visorSmile}
-        <!-- Hover Thruster -->
         <path d="M22 44 H42 L38 51 H26 Z" fill="#f59e0b"/>
         <ellipse cx="32" cy="54" rx="7" ry="2.2" fill="#38bdf8" opacity="0.8"/>
       </svg>

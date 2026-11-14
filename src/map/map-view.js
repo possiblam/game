@@ -43,7 +43,8 @@ export function renderMapView(
   const mapHotspots = world.hotspots;
   const routeSegments = world.routeSegments;
   const decoyChests = getDecoyChestsForWorld(world.id);
-  const isLanternsWorld = world.id === 'two-lanterns';
+  const useCumulativeNumbers = world.stageNumberMode === '1-12';
+  const hasRouteKeys = world.hasRouteKeys !== false;
 
   const shell = document.createElement('div');
   shell.className = 'map-shell';
@@ -97,8 +98,12 @@ export function renderMapView(
   const board = document.createElement('div');
   board.className = 'map-board';
   board.dataset.testid = 'adventure-map-board';
+  board.dataset.worldId = world.id;
+  if (mapViewbox?.width && mapViewbox?.height) {
+    board.style.aspectRatio = `${mapViewbox.width} / ${mapViewbox.height}`;
+  }
 
-  // 1. World Map Artwork (1672:941)
+  // 1. World Map Artwork
   const img = document.createElement('img');
   img.src = world.mapImage;
   img.alt = `${world.title} — ${UI_TEXT.daytimeRoute} و ${UI_TEXT.nighttimeRoute}`;
@@ -109,15 +114,23 @@ export function renderMapView(
   // 2. Ambient Animation Layer
   const ambient = document.createElement('div');
   ambient.className = 'map-ambient-layer';
-  ambient.innerHTML = isLanternsWorld
-    ? `
+  if (world.ambientPreset === 'chronos') {
+    ambient.innerHTML = `
+      <div class="animate-cloud absolute top-[4%] left-[12%] w-[14%] h-[5%] rounded-full bg-amber-100/25 blur-md"></div>
+      <span class="animate-twinkle absolute top-[18%] right-[28%] w-2 h-2 rounded-full bg-cyan-300"></span>
+      <span class="animate-twinkle absolute top-[26%] right-[16%] w-1.5 h-1.5 rounded-full bg-violet-200" style="animation-delay:0.7s"></span>
+      <span class="animate-twinkle absolute top-[12%] left-[48%] w-2 h-2 rounded-full bg-amber-200" style="animation-delay:0.4s"></span>
+    `;
+  } else if (world.ambientPreset === 'two-lanterns') {
+    ambient.innerHTML = `
       <div class="animate-cloud absolute top-[5%] left-[14%] w-[12%] h-[5%] rounded-full bg-white/25 blur-md"></div>
       <span class="animate-twinkle absolute top-[6%] right-[22%] w-2 h-2 rounded-full bg-cyan-200"></span>
       <span class="animate-twinkle absolute top-[12%] right-[31%] w-1.5 h-1.5 rounded-full bg-white" style="animation-delay:0.8s"></span>
       <span class="animate-twinkle absolute top-[16%] left-[48%] w-2 h-2 rounded-full bg-amber-200" style="animation-delay:0.5s"></span>
       <span class="animate-twinkle absolute top-[35%] left-[44%] w-2 h-2 rounded-full bg-sky-200/80" style="animation-delay:1.3s"></span>
-    `
-    : `
+    `;
+  } else {
+    ambient.innerHTML = `
       <div class="animate-cloud absolute top-[4%] left-[6%] w-[14%] h-[6%] rounded-full bg-white/30 blur-md"></div>
       <div class="animate-cloud absolute top-[9%] left-[22%] w-[10%] h-[4%] rounded-full bg-amber-100/25 blur-sm" style="animation-delay:-7s"></div>
       <span class="animate-twinkle absolute top-[5%] right-[16%] w-2 h-2 rounded-full bg-cyan-200"></span>
@@ -127,6 +140,7 @@ export function renderMapView(
       <span class="animate-twinkle absolute top-[38%] left-[52%] w-2 h-2 rounded-full bg-sky-100/80" style="animation-delay:0.4s"></span>
       <span class="animate-twinkle absolute top-[47%] left-[56%] w-2 h-2 rounded-full bg-cyan-200/80" style="animation-delay:1.2s"></span>
     `;
+  }
   board.appendChild(ambient);
 
   // 3. SVG Overlay for independent Daytime & Nighttime routes
@@ -202,7 +216,9 @@ export function renderMapView(
     compPos = { x: mapHotspots.final.x, y: mapHotspots.final.y + 4 };
   }
 
-  const companionPair = isLanternsWorld ? [state.selectedHero || 'arad', 'pico'] : ['arad', 'nika'];
+  const companionPair = world.supportsHeroSelection
+    ? [state.selectedHero || 'arad', world.guideCharacterId || 'pico']
+    : world.companionIds || ['arad', 'nika'];
 
   const companion = document.createElement('div');
   companion.className = 'map-companion-marker flex items-center justify-center';
@@ -318,7 +334,7 @@ export function renderMapView(
         ? `${UI_TEXT.stageActive}`
         : `${UI_TEXT.stageLocked}`;
 
-      const displayNumber = isLanternsWorld && route === 'nighttime' ? node.number + 6 : node.number;
+      const displayNumber = useCumulativeNumbers && route === 'nighttime' ? node.number + 6 : node.number;
 
       btn.setAttribute(
         'aria-label',
@@ -907,33 +923,35 @@ export function renderMapView(
 
     routeListWrap.innerHTML = '';
     const isDay = activeMobileRoute === 'daytime';
-    const keyType = isDay ? 'magnetic' : 'silver';
-    const hasRouteKey = isDay ? ws.keys?.magnetic : ws.keys?.silver;
-    const keyName = isDay ? world.daytimeKeyName : world.nighttimeKeyName;
+    if (hasRouteKeys) {
+      const keyType = isDay ? 'magnetic' : 'silver';
+      const hasRouteKey = isDay ? ws.keys?.magnetic : ws.keys?.silver;
+      const keyName = isDay ? world.daytimeKeyName : world.nighttimeKeyName;
 
-    const keyBanner = document.createElement('div');
-    keyBanner.className = `flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold ${
-      hasRouteKey
-        ? 'bg-emerald-950/60 border-emerald-400/50 text-emerald-200'
-        : 'bg-slate-900/90 border-slate-700 text-slate-300'
-    }`;
-    keyBanner.innerHTML = `
-      <div class="flex items-center gap-2">
-        ${renderKeyIconSvg(keyType, hasRouteKey)}
-        <span>${keyName}</span>
-      </div>
-      <span class="${hasRouteKey ? 'text-emerald-300' : 'text-amber-300'}">
-        ${hasRouteKey ? '✓ پیدا شد (آماده دروازه ۳)' : 'پنهان در مرحله ۲'}
-      </span>
-    `;
-    routeListWrap.appendChild(keyBanner);
+      const keyBanner = document.createElement('div');
+      keyBanner.className = `flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold ${
+        hasRouteKey
+          ? 'bg-emerald-950/60 border-emerald-400/50 text-emerald-200'
+          : 'bg-slate-900/90 border-slate-700 text-slate-300'
+      }`;
+      keyBanner.innerHTML = `
+        <div class="flex items-center gap-2">
+          ${renderKeyIconSvg(keyType, hasRouteKey)}
+          <span>${keyName}</span>
+        </div>
+        <span class="${hasRouteKey ? 'text-emerald-300' : 'text-amber-300'}">
+          ${hasRouteKey ? '✓ پیدا شد (آماده دروازه ۳)' : 'پنهان در مرحله ۲'}
+        </span>
+      `;
+      routeListWrap.appendChild(keyBanner);
+    }
 
     mapHotspots.stages[activeMobileRoute].forEach((node) => {
       const stageMeta = getStage(activeMobileRoute, node.number, world.id);
       const completed = isStageCompleted(state, activeMobileRoute, node.number, world.id);
       const unlocked = isStageUnlocked(state, activeMobileRoute, node.number, world.id);
       const stars = ws.stars?.[stageMeta.id] || 0;
-      const displayNum = isLanternsWorld && activeMobileRoute === 'nighttime' ? node.number + 6 : node.number;
+      const displayNum = useCumulativeNumbers && activeMobileRoute === 'nighttime' ? node.number + 6 : node.number;
 
       const card = document.createElement('button');
       card.type = 'button';

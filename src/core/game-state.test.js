@@ -36,6 +36,15 @@ import {
   computeZoomAroundPoint,
   computePercentFocusTransform,
 } from '../map/zoom-math.js';
+import {
+  evaluateAcousticSequence,
+  isGearToothSolid,
+  traceChronosSolarPrism,
+  evaluateWaterScale,
+  stepSonarMazeMove,
+  validateColorStoneStep,
+  isChronosConstellationSolved,
+} from '../stages/chronos/chronos-logic.js';
 
 test('stage 1 is unlocked on both routes while stages 2..6 start locked', () => {
   const state = createInitialGameState();
@@ -46,25 +55,30 @@ test('stage 1 is unlocked on both routes while stages 2..6 start locked', () => 
   assert.equal(isFinalUnlocked(state), false);
 });
 
-test('completing stage 2 grants route key and stage 3 requires that key', () => {
+test('completing stage 2 grants route key and stage 3 requires that key in key-gated worlds', () => {
   let state = createInitialGameState();
-  assert.equal(hasRequiredKeyForStage(state, 'daytime', 3), false);
-  assert.equal(hasRequiredKeyForStage(state, 'nighttime', 3), false);
+  // World 1 (twin-times) does not gate stage 3 with keys
+  assert.equal(hasRequiredKeyForStage(state, 'daytime', 3, 'twin-times'), true);
 
-  state = applyStageCompletion(state, { route: 'daytime', stageNumber: 1, stars: 3 });
-  assert.equal(isStageUnlocked(state, 'daytime', 2), true);
-  assert.equal(isStageUnlocked(state, 'nighttime', 2), false);
+  // World 2 (two-worlds) requires route keys on stage 3
+  assert.equal(hasRequiredKeyForStage(state, 'daytime', 3, 'two-worlds'), false);
+  assert.equal(hasRequiredKeyForStage(state, 'nighttime', 3, 'two-worlds'), false);
+
+  state = applyStageCompletion(state, { route: 'daytime', stageNumber: 1, stars: 3, worldId: 'two-worlds' });
+  assert.equal(isStageUnlocked(state, 'daytime', 2, 'two-worlds'), true);
+  assert.equal(isStageUnlocked(state, 'nighttime', 2, 'two-worlds'), false);
 
   state = applyStageCompletion(state, {
     route: 'daytime',
     stageNumber: 2,
     stars: 3,
     grantedKey: 'magnetic',
+    worldId: 'two-worlds',
   });
-  assert.equal(state.keys.magnetic, true);
-  assert.equal(state.keys.silver, false);
-  assert.equal(hasRequiredKeyForStage(state, 'daytime', 3), true);
-  assert.equal(hasRequiredKeyForStage(state, 'nighttime', 3), false);
+  assert.equal(state.worlds['two-worlds'].keys.magnetic, true);
+  assert.equal(state.worlds['two-worlds'].keys.silver, false);
+  assert.equal(hasRequiredKeyForStage(state, 'daytime', 3, 'two-worlds'), true);
+  assert.equal(hasRequiredKeyForStage(state, 'nighttime', 3, 'two-worlds'), false);
 });
 
 test('decoy discovery records state without advancing stage count or unlocking final', () => {
@@ -77,51 +91,65 @@ test('decoy discovery records state without advancing stage count or unlocking f
   assert.equal(isFinalUnlocked(state), false);
 });
 
-test('final treasure unlocks only after all 12 stages complete, and conquering World 1 unlocks World 2', () => {
+test('3-world ladder unlocks sequentially: twin-times -> two-worlds -> two-lanterns', () => {
   let state = createInitialGameState();
+  assert.equal(state.activeWorldId, 'twin-times');
+  assert.equal(isWorldUnlocked(state, 'twin-times'), true);
+  assert.equal(isWorldUnlocked(state, 'two-worlds'), false);
+  assert.equal(isWorldUnlocked(state, 'two-lanterns'), false);
+
+  // Attempting to switch to locked World 2 or 3 must be ignored
+  assert.equal(setActiveWorld(state, 'two-worlds').activeWorldId, 'twin-times');
+  assert.equal(setActiveWorld(state, 'two-lanterns').activeWorldId, 'twin-times');
+
+  // Complete all 12 stages of Chronos (twin-times)
+  for (let i = 1; i <= 6; i++) {
+    state = applyStageCompletion(state, { route: 'daytime', stageNumber: i, stars: 3, worldId: 'twin-times' });
+  }
+  assert.equal(isFinalUnlocked(state, 'twin-times'), false);
+  assert.equal(getTotalCompletedStages(state, 'twin-times'), 6);
+
+  for (let i = 1; i <= 5; i++) {
+    state = applyStageCompletion(state, { route: 'nighttime', stageNumber: i, stars: 2, worldId: 'twin-times' });
+  }
+  assert.equal(isFinalUnlocked(state, 'twin-times'), false);
+
+  state = applyStageCompletion(state, { route: 'nighttime', stageNumber: 6, stars: 3, worldId: 'twin-times' });
+  assert.equal(isFinalUnlocked(state, 'twin-times'), true);
+  assert.equal(getTotalCompletedStages(state, 'twin-times'), 12);
+  assert.equal(getTotalStars(state, 'twin-times'), 6 * 3 + 5 * 2 + 3);
+  assert.equal(isWorldUnlocked(state, 'two-worlds'), false);
+
+  state = applyFinalVictory(state, 'twin-times');
   assert.equal(isWorldUnlocked(state, 'two-worlds'), true);
   assert.equal(isWorldUnlocked(state, 'two-lanterns'), false);
 
-  // Attempting to switch to locked World 2 must be ignored
-  const blockedSwitch = setActiveWorld(state, 'two-lanterns');
-  assert.equal(blockedSwitch.activeWorldId, 'two-worlds');
-
+  // Switch to two-worlds and conquer it to unlock two-lanterns
+  state = setActiveWorld(state, 'two-worlds');
+  assert.equal(state.activeWorldId, 'two-worlds');
   for (let i = 1; i <= 6; i++) {
     state = applyStageCompletion(state, {
       route: 'daytime',
       stageNumber: i,
       stars: 3,
       grantedKey: i === 2 ? 'magnetic' : null,
+      worldId: 'two-worlds',
     });
-  }
-  assert.equal(isFinalUnlocked(state), false);
-  assert.equal(getTotalCompletedStages(state), 6);
-
-  for (let i = 1; i <= 5; i++) {
     state = applyStageCompletion(state, {
       route: 'nighttime',
       stageNumber: i,
-      stars: 2,
+      stars: 3,
       grantedKey: i === 2 ? 'silver' : null,
+      worldId: 'two-worlds',
     });
   }
-  assert.equal(isFinalUnlocked(state), false);
-
-  state = applyStageCompletion(state, { route: 'nighttime', stageNumber: 6, stars: 3 });
-  assert.equal(isFinalUnlocked(state), true);
-  assert.equal(getTotalCompletedStages(state), 12);
-  assert.equal(getTotalStars(state), 6 * 3 + 5 * 2 + 3);
-  assert.equal(isWorldUnlocked(state, 'two-lanterns'), false);
-
-  state = applyFinalVictory(state);
-  assert.equal(state.finalCompleted, true);
+  state = applyFinalVictory(state, 'two-worlds');
   assert.equal(isWorldUnlocked(state, 'two-lanterns'), true);
 
-  // Switching to World 2 succeeds now and keeps World 2 progress independent
   state = setActiveWorld(state, 'two-lanterns');
   assert.equal(state.activeWorldId, 'two-lanterns');
   assert.equal(getTotalCompletedStages(state, 'two-lanterns'), 0);
-  assert.equal(getTotalCompletedStages(state, 'two-worlds'), 12);
+  assert.equal(getTotalCompletedStages(state, 'twin-times'), 12);
 
   state = setSelectedHero(state, 'raha');
   assert.equal(state.selectedHero, 'raha');
@@ -144,6 +172,7 @@ test('v1 saved state migrates cleanly into v2 multi-world state', () => {
   assert.equal(migrated.version, 2);
   assert.equal(migrated.activeWorldId, 'two-worlds');
   assert.equal(migrated.muted, true);
+  assert.equal(isWorldUnlocked(migrated, 'two-worlds'), true);
   assert.equal(isWorldUnlocked(migrated, 'two-lanterns'), true);
   assert.equal(getTotalCompletedStages(migrated, 'two-worlds'), 12);
   assert.equal(getTotalCompletedStages(migrated, 'two-lanterns'), 0);
@@ -375,3 +404,84 @@ test('World 2 Night 2, 3, 4, 5 pure logic solvers validate constraints accuratel
     false
   );
 });
+
+// ================= WORLD 1 (CHRONOS / TWIN TIMES) PURE LOGIC TESTS =================
+test('Chronos acoustic crystal sequence & gear broken sectors validate accurately', () => {
+  assert.deepEqual(evaluateAcousticSequence(['c1', 'c3'], ['c1', 'c3', 'c2']), {
+    ok: true,
+    complete: false,
+    matchedCount: 2,
+  });
+  assert.deepEqual(evaluateAcousticSequence(['c1', 'c3', 'c2'], ['c1', 'c3', 'c2']), {
+    ok: true,
+    complete: true,
+    matchedCount: 3,
+  });
+  assert.equal(evaluateAcousticSequence(['c1', 'c2'], ['c1', 'c3', 'c2']).ok, false);
+
+  const broken = [{ startDeg: 60, endDeg: 130 }];
+  assert.equal(isGearToothSolid(0, 90, broken), false);
+  assert.equal(isGearToothSolid(0, 270, broken), true);
+  assert.equal(isGearToothSolid(180, 90, broken), true); // local angle is 270
+});
+
+test('Chronos solar prism splitter and water scale balance solve only under exact physical conditions', () => {
+  const emitter = { x: 80, y: 210, angleDeg: 0 };
+  const prism = { x: 360, y: 210, r: 22, redAngleDeg: -45, yellowAngleDeg: 45, blueAngleDeg: 90 };
+  const sensors = [
+    { id: 'red', color: 'red', x: 640, y: 110, r: 24 },
+    { id: 'yellow', color: 'yellow', x: 640, y: 310, r: 24 },
+  ];
+  const unsolved = traceChronosSolarPrism({
+    emitter,
+    mirrors: [
+      { id: 1, x: 520, y: 50, angleDeg: 90, length: 76 },
+      { id: 2, x: 520, y: 370, angleDeg: 90, length: 76 },
+    ],
+    prism,
+    sensors,
+  });
+  assert.equal(unsolved.prismLit, true);
+  assert.equal(unsolved.solved, false);
+
+  // Verify water balance scale
+  const over = evaluateWaterScale({ leftWater: 17, rightWater: 17, maxWater: 16 });
+  assert.equal(over.overflow, true);
+  assert.equal(over.balanced, false);
+
+  const balanced = evaluateWaterScale({
+    leftWater: 4,
+    rightWater: 3,
+    leftWeights: [3, 5],
+    rightWeights: [9],
+    maxWater: 16,
+    minBalancedTotal: 10,
+  });
+  assert.equal(balanced.leftTotal, 12);
+  assert.equal(balanced.rightTotal, 12);
+  assert.equal(balanced.balanced, true);
+});
+
+test('Chronos Night 2 sonar maze, Night 3 color stones, and Night 6 constellation lock behave deterministically', () => {
+  const grid = [
+    '#####',
+    '#S.X#',
+    '#.#.#',
+    '#..E#',
+    '#####',
+  ];
+  assert.equal(stepSonarMazeMove(grid, { r: 1, c: 1 }, 'up').event, 'wall');
+  const stepRight = stepSonarMazeMove(grid, { r: 1, c: 1 }, 'right');
+  assert.equal(stepRight.event, 'ok');
+  assert.equal(stepSonarMazeMove(grid, stepRight.pos, 'right').event, 'spike');
+  assert.equal(stepSonarMazeMove(grid, { r: 3, c: 2 }, 'right').event, 'exit');
+
+  assert.deepEqual(validateColorStoneStep(['cyan', 'amber', 'magenta'], 0, 'cyan'), { ok: true, complete: false });
+  assert.deepEqual(validateColorStoneStep(['cyan', 'amber', 'magenta'], 2, 'magenta'), { ok: true, complete: true });
+  assert.equal(validateColorStoneStep(['cyan', 'amber', 'magenta'], 1, 'cyan').ok, false);
+
+  assert.equal(isChronosConstellationSolved([90, 225, 315], [90, 225, 315], 5, 5), true);
+  assert.equal(isChronosConstellationSolved([90, 225, 315], [90, 225, 315], 2, 5), false);
+  assert.equal(isChronosConstellationSolved([45, 225, 315], [90, 225, 315], 5, 5), false);
+});
+

@@ -35,6 +35,21 @@ function getStageArtSvg(stage) {
     'lanterns-nighttime-4': '<polygon points="32,20 42,38 22,38" fill="#e2e8f0" opacity="0.85"/><line x1="12" y1="30" x2="27" y2="30" stroke="#ffffff" stroke-width="3"/><line x1="37" y1="30" x2="66" y2="20" stroke="#22d3ee" stroke-width="3"/><line x1="37" y1="32" x2="64" y2="46" stroke="#e879f9" stroke-width="3"/>',
     'lanterns-nighttime-5': '<line x1="12" y1="18" x2="68" y2="26" stroke="#cbd5e1" stroke-width="2.5"/><line x1="40" y1="22" x2="40" y2="30" stroke="#94a3b8" stroke-width="2"/><rect x="28" y="30" width="24" height="16" rx="4" fill="#ef4444" stroke="#fef08a" stroke-width="2"/>',
     'lanterns-nighttime-6': '<rect x="16" y="16" width="13" height="13" rx="2" fill="#38bdf8"/><rect x="33" y="16" width="13" height="13" rx="2" fill="#1e293b" stroke="#475569"/><rect x="50" y="16" width="13" height="13" rx="2" fill="#ef4444" opacity="0.7"/><rect x="33" y="34" width="13" height="13" rx="2" fill="#38bdf8"/>',
+
+    // World 1 (Twin Times / Chronos) custom icons
+    'chronos-daytime-1': '<path d="M22 14 V32 A6 6 0 0 0 34 32 V14" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/><path d="M46 14 V32 A6 6 0 0 0 58 32 V14" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round"/><line x1="16" y1="48" x2="64" y2="48" stroke="#34d399" stroke-width="4" stroke-linecap="round"/>',
+    'chronos-daytime-2': '<circle cx="29" cy="36" r="11" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="5 3"/><circle cx="51" cy="24" r="10" fill="none" stroke="#fb923c" stroke-width="4" stroke-dasharray="5 3"/>',
+    'chronos-daytime-3': '<polygon points="40,14 54,40 26,40" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2"/><line x1="12" y1="28" x2="32" y2="28" stroke="#ffffff" stroke-width="3"/><line x1="48" y1="26" x2="68" y2="18" stroke="#f43f5e" stroke-width="3"/><line x1="48" y1="30" x2="68" y2="38" stroke="#fbbf24" stroke-width="3"/>',
+    'chronos-daytime-4': '<path d="M22 28 Q40 12 58 28 Z" fill="#fb923c" stroke="#fef08a" stroke-width="2"/><circle cx="40" cy="37" r="3.5" fill="#fff"/><path d="M32 54 Q40 42 48 54" fill="none" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>',
+    'chronos-daytime-5': '<line x1="26" y1="10" x2="36" y2="34" stroke="#34d399" stroke-width="2.5"/><circle cx="37" cy="37" r="6" fill="#fbbf24"/><circle cx="56" cy="28" r="8" fill="#ef4444" stroke="#38bdf8" stroke-width="2.5"/>',
+    'chronos-daytime-6': '<line x1="16" y1="26" x2="64" y2="26" stroke="#fbbf24" stroke-width="3"/><line x1="40" y1="16" x2="40" y2="50" stroke="#94a3b8" stroke-width="3"/><rect x="14" y="34" width="16" height="10" rx="3" fill="#38bdf8"/><rect x="50" y="34" width="16" height="10" rx="3" fill="#38bdf8"/>',
+
+    'chronos-nighttime-1': '<ellipse cx="26" cy="40" rx="11" ry="6" fill="#22d3ee" opacity="0.8"/><ellipse cx="52" cy="28" rx="12" ry="6.5" fill="#34d399" opacity="0.85"/><circle cx="52" cy="24" r="3" fill="#fef08a"/>',
+    'chronos-nighttime-2': '<circle cx="40" cy="32" r="6" fill="#38bdf8"/><circle cx="40" cy="32" r="14" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="32" r="22" fill="none" stroke="#818cf8" stroke-width="1.5"/>',
+    'chronos-nighttime-3': '<rect x="14" y="34" width="14" height="12" rx="3" fill="#22d3ee"/><rect x="33" y="28" width="14" height="12" rx="3" fill="#fbbf24"/><rect x="52" y="34" width="14" height="12" rx="3" fill="#e879f9"/>',
+    'chronos-nighttime-4': '<polygon points="24,14 29,34 19,34" fill="#bae6fd"/><polygon points="44,12 50,38 38,38" fill="#7dd3fc"/><polygon points="60,16 64,32 56,32" fill="#e0f2fe"/><line x1="12" y1="48" x2="68" y2="48" stroke="#38bdf8" stroke-width="3"/>',
+    'chronos-nighttime-5': '<path d="M12 24 Q40 36 68 24" fill="none" stroke="#fbbf24" stroke-width="3"/><rect x="26" y="32" width="4" height="14" rx="2" fill="#22d3ee"/><rect x="38" y="34" width="4" height="16" rx="2" fill="#a78bfa"/><rect x="50" y="32" width="4" height="14" rx="2" fill="#38bdf8"/>',
+    'chronos-nighttime-6': '<circle cx="40" cy="32" r="18" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6 4"/><circle cx="40" cy="32" r="10" fill="none" stroke="#fbbf24" stroke-width="2.5"/><polygon points="40,8 42,13 47,13 43,16 44,21 40,18 36,21 37,16 33,13 38,13" fill="#fde047"/>',
   };
 
   return `
@@ -56,7 +71,8 @@ export function showStageIntroModal(stage, { hasKey = true, selectedHero = 'arad
         </div>`
       : '';
 
-  const speakerId = stage.worldId === 'two-lanterns' ? selectedHero : 'arad';
+  const speakerId =
+    world.introSpeakerId === 'selectedHero' ? selectedHero : world.introSpeakerId || 'arad';
   const speakerChar = CHARACTERS[speakerId] || CHARACTERS.arad;
 
   showModal({

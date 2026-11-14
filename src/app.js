@@ -17,7 +17,12 @@ import {
 } from './core/game-state.js';
 import { launchStageMiniGame } from './core/game-engine.js';
 import { UI_TEXT, toPersianDigits } from './data/translations.js';
-import { WORLDS, getWorldConfig, getNextWorldConfig } from './data/worlds.js';
+import {
+  WORLDS,
+  getWorldConfig,
+  getNextWorldConfig,
+  getWorldDifficultyBadgeClass,
+} from './data/worlds.js';
 import {
   CHARACTERS,
   GUIDE_SECTIONS,
@@ -177,7 +182,7 @@ export function initApp(rootEl) {
     audio.setMusicTheme('map');
     const world = getWorldConfig(worldId);
     const slides = getIntroSlidesForWorld(world.id);
-    const isLanterns = world.id === 'two-lanterns';
+    const isHeroSelectable = Boolean(world.supportsHeroSelection);
     let slideIdx = 0;
 
     sceneManager.mount('story', 'playing', (mountEl) => {
@@ -198,10 +203,10 @@ export function initApp(rootEl) {
         if (speaker === 'pico') {
           return `<div class="w-20 h-20 animate-float">${renderCharacterAvatarSvg('pico', 'happy')}</div>`;
         }
-        if (isLanterns) {
+        if (isHeroSelectable) {
           return `
             <div class="w-16 h-16 sm:w-20 sm:h-20 animate-float">${renderCharacterAvatarSvg(state.selectedHero || 'arad', 'excited')}</div>
-            <div class="w-16 h-16 sm:w-20 sm:h-20 animate-float" style="animation-delay:0.35s">${renderCharacterAvatarSvg('pico', 'happy')}</div>
+            <div class="w-16 h-16 sm:w-20 sm:h-20 animate-float" style="animation-delay:0.35s">${renderCharacterAvatarSvg(world.guideCharacterId || 'pico', 'happy')}</div>
           `;
         }
         return `
@@ -417,15 +422,14 @@ export function initApp(rootEl) {
     audio.setMusicTheme('none');
     const hasSave = progressManager.hasSavedProgress();
     const activeWorld = getWorldConfig(state.activeWorldId);
-    const isLanternsActive = activeWorld.id === 'two-lanterns';
+    const isHeroSelectable = Boolean(activeWorld.supportsHeroSelection);
+    const difficultyTrail = WORLDS.map((w) => w.difficultyLabel).join(' ← ');
 
     const ladderHtml = WORLDS.map((w) => {
       const sum = getWorldProgressSummary(state, w.id);
       const active = state.activeWorldId === w.id;
-      const badgeClass =
-        w.difficultyColor === 'rose'
-          ? 'bg-rose-500/20 text-rose-200 border-rose-400/50'
-          : 'bg-amber-500/20 text-amber-200 border-amber-400/50';
+      const reqWorld = w.unlockRequirementWorldId ? getWorldConfig(w.unlockRequirementWorldId) : null;
+      const badgeClass = getWorldDifficultyBadgeClass(w.difficultyColor);
       return `
         <button type="button" data-title-world="${w.id}" data-testid="title-world-pill-${w.id}"
           class="w-full text-right p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
@@ -440,11 +444,11 @@ export function initApp(rootEl) {
               <span class="font-extrabold text-xs sm:text-sm truncate">${sum.unlocked ? '🗺' : '🔒'} ${w.title}</span>
               <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold border shrink-0 ${badgeClass}">${w.difficultyLabel}</span>
             </div>
-            <div class="text-[11px] text-slate-400 mt-0.5 tabular-nums">
+            <div class="text-[11px] text-slate-400 mt-0.5 tabular-nums truncate">
               ${
                 sum.unlocked
                   ? `${toPersianDigits(sum.completedCount)}/${toPersianDigits(12)} مرحله · ${toPersianDigits(sum.stars)}/${toPersianDigits(w.maxStars)} ★`
-                  : 'پیش‌نیاز: فتح گنج نقشه اول'
+                  : `پیش‌نیاز: فتح «${reqWorld?.title || 'نقشه قبلی'}»`
               }
             </div>
           </div>
@@ -457,7 +461,7 @@ export function initApp(rootEl) {
       `;
     }).join('');
 
-    const heroesHtml = isLanternsActive
+    const heroesHtml = isHeroSelectable
       ? `
         <div class="flex items-center gap-3 p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/35">
           <div class="w-14 h-14 shrink-0 animate-float">${renderCharacterAvatarSvg(state.selectedHero || 'arad', 'excited')}</div>
@@ -467,10 +471,10 @@ export function initApp(rootEl) {
           </div>
         </div>
         <div class="flex items-center gap-3 p-3 rounded-2xl bg-amber-950/35 border border-amber-400/35">
-          <div class="w-14 h-14 shrink-0 animate-float" style="animation-delay:0.4s">${renderCharacterAvatarSvg('pico', 'happy')}</div>
+          <div class="w-14 h-14 shrink-0 animate-float" style="animation-delay:0.4s">${renderCharacterAvatarSvg(activeWorld.guideCharacterId || 'pico', 'happy')}</div>
           <div>
-            <div class="font-extrabold text-amber-300 text-sm sm:text-base">${CHARACTERS.pico.name}</div>
-            <div class="text-xs text-slate-200">${CHARACTERS.pico.title}</div>
+            <div class="font-extrabold text-amber-300 text-sm sm:text-base">${(CHARACTERS[activeWorld.guideCharacterId || 'pico'] || CHARACTERS.pico).name}</div>
+            <div class="text-xs text-slate-200">${(CHARACTERS[activeWorld.guideCharacterId || 'pico'] || CHARACTERS.pico).title}</div>
           </div>
         </div>
       `
@@ -567,10 +571,10 @@ export function initApp(rootEl) {
           <!-- Right / Multi-Map Progression Ladder & Heroes -->
           <div class="lg:col-span-5 storybook-panel rounded-3xl p-5 sm:p-6 flex flex-col gap-3">
             <div class="flex items-center justify-between text-xs font-extrabold text-amber-200 px-1">
-              <span>نقشه‌های بازی (سخت ← سخت‌تر)</span>
+              <span>نقشه‌های بازی (${difficultyTrail})</span>
               <span class="text-slate-400 tabular-nums">${toPersianDigits(WORLDS.length)} نقشه</span>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-2 max-h-[260px] overflow-y-auto pl-1">
               ${ladderHtml}
             </div>
             <div class="pt-2 border-t border-slate-700/70 space-y-2.5">

@@ -1,6 +1,6 @@
 import { UI_TEXT, toPersianDigits } from '../data/translations.js';
-import { getWorldConfig } from '../data/worlds.js';
-import { getRouteProgressCount, getTotalStars, getTotalXP } from '../core/game-state.js';
+import { getWorldConfig, getWorldDifficultyBadgeClass } from '../data/worlds.js';
+import { getRouteProgressCount, getTotalStars, getTotalXP, getWorldState } from '../core/game-state.js';
 
 export function renderKeyIconSvg(keyType, collected) {
   const color =
@@ -39,15 +39,36 @@ export function renderMapTopBar({
   onOpenSettings,
 }) {
   const world = worldConfig || getWorldConfig(state.activeWorldId);
+  const ws = getWorldState(state, world.id);
   const dayCount = getRouteProgressCount(state, 'daytime', world.id);
   const nightCount = getRouteProgressCount(state, 'nighttime', world.id);
   const totalStars = getTotalStars(state, world.id);
   const totalXp = getTotalXP(state);
 
-  const diffBadgeClass =
-    world.difficultyColor === 'rose'
-      ? 'bg-rose-500/20 border-rose-400/60 text-rose-200'
-      : 'bg-amber-500/20 border-amber-400/60 text-amber-200';
+  const diffBadgeClass = getWorldDifficultyBadgeClass(world.difficultyColor);
+  const hasRouteKeys = world.hasRouteKeys !== false;
+
+  const toolkitHtml = hasRouteKeys
+    ? `
+      <div class="flex items-center gap-1.5 md:gap-2 px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg bg-slate-800/90 border border-slate-700" aria-label="${UI_TEXT.toolkitLabel}">
+        <span class="hidden md:inline text-xs text-slate-400 font-semibold">${UI_TEXT.toolkitLabel}:</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold ${ws.keys?.magnetic ? 'text-amber-300' : 'text-slate-500'}" data-testid="key-magnetic-status" title="${world.daytimeKeyName}">
+          ${renderKeyIconSvg('magnetic', ws.keys?.magnetic)}
+          <span class="hidden md:inline">${ws.keys?.magnetic ? world.daytimeKeyName : 'ندارد'}</span>
+        </span>
+        <span class="text-slate-600" aria-hidden="true">|</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold ${ws.keys?.silver ? 'text-cyan-200' : 'text-slate-500'}" data-testid="key-silver-status" title="${world.nighttimeKeyName}">
+          ${renderKeyIconSvg('silver', ws.keys?.silver)}
+          <span class="hidden md:inline">${ws.keys?.silver ? world.nighttimeKeyName : 'ندارد'}</span>
+        </span>
+      </div>
+    `
+    : `
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/90 border border-emerald-400/35 text-xs font-bold text-emerald-200" title="${world.finalTempleTitle}">
+        <span aria-hidden="true">⚖️</span>
+        <span>تعادل: ${toPersianDigits(dayCount === 6 && nightCount === 6 ? 'کامل' : `${dayCount + nightCount}/۱۲`)}</span>
+      </div>
+    `;
 
   const bar = document.createElement('header');
   bar.className =
@@ -106,18 +127,7 @@ export function renderMapTopBar({
     </div>
 
     <div class="flex items-center gap-2 sm:gap-3">
-      <div class="flex items-center gap-1.5 md:gap-2 px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg bg-slate-800/90 border border-slate-700" aria-label="${UI_TEXT.toolkitLabel}">
-        <span class="hidden md:inline text-xs text-slate-400 font-semibold">${UI_TEXT.toolkitLabel}:</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold ${state.keys.magnetic ? 'text-amber-300' : 'text-slate-500'}" data-testid="key-magnetic-status" title="${world.daytimeKeyName}">
-          ${renderKeyIconSvg('magnetic', state.keys.magnetic)}
-          <span class="hidden md:inline">${state.keys.magnetic ? world.daytimeKeyName : 'ندارد'}</span>
-        </span>
-        <span class="text-slate-600" aria-hidden="true">|</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold ${state.keys.silver ? 'text-cyan-200' : 'text-slate-500'}" data-testid="key-silver-status" title="${world.nighttimeKeyName}">
-          ${renderKeyIconSvg('silver', state.keys.silver)}
-          <span class="hidden md:inline">${state.keys.silver ? world.nighttimeKeyName : 'ندارد'}</span>
-        </span>
-      </div>
+      ${toolkitHtml}
 
       <button type="button" data-action="guide" class="hidden md:inline-flex px-3 py-1.5 rounded-lg btn-secondary-slate text-xs sm:text-sm whitespace-nowrap shrink-0">
         ${UI_TEXT.gameGuide}
